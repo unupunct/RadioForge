@@ -25,7 +25,7 @@ public partial class ServersView : UserControl
 
     public ServersView()
     {
-        InitializeComponent();
+        InitializeComponent(); LayoutPersist.Attach(Split, "servers");
         TypeBox.ItemsSource = Enum.GetValues<ServerType>(); CodecBox.ItemsSource = Enum.GetValues<AudioCodec>();
         BitrateBox.ItemsSource = new[] { 32, 48, 64, 96, 128, 160, 192, 256, 320 }; RateBox.ItemsSource = new[] { 22050, 32000, 44100, 48000 }; ChBox.ItemsSource = new[] { 1, 2 };
         Loaded += (_, _) => { _t.Start(); if (List.SelectedItem == null && List.Items.Count > 0) List.SelectedIndex = 0; };
@@ -47,7 +47,7 @@ public partial class ServersView : UserControl
         var p = Cur?.Profile; if (p == null) return;
         var ff = Core.Streaming.Ffmpeg.Locate(Vm.Settings.FfmpegPath);
         CodecNote.Text = p.Codec == AudioCodec.Mp3 ? "MP3 uses the built-in LAME encoder. Actual bitrate/format compatibility depends on your streaming host."
-            : ff == null ? $"⚠ {p.Codec} needs FFmpeg, which was not found. Install FFmpeg or set its path in Application Settings → Advanced." : $"{p.Codec} is encoded with FFmpeg ({ff}). Compatibility depends on your streaming host.";
+            : ff == null ? $"⚠ {p.Codec} needs FFmpeg, which was not found. Download it in Application Settings → Advanced (one click) or set its path." : $"{p.Codec} is encoded with FFmpeg ({ff}). Compatibility depends on your streaming host.";
     }
 
     private void RefreshLive()

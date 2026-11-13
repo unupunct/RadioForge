@@ -11,6 +11,32 @@ namespace RadioForge.App;
 
 public static class ThemeManager
 {
+    /// <summary>
+    /// Native Fluent controls take their accent from brushes inside the theme dictionary (the user's Windows accent).
+    /// Find every brush that carries an accent shade and recolor it to the app accent, preserving lighter/darker variants.
+    /// </summary>
+    private static void RecolorTheme(Application app, Color ac, Color onAc)
+    {
+        var theme = app.Resources.MergedDictionaries.FirstOrDefault(d => d.Source?.OriginalString.Contains("Fluent", StringComparison.OrdinalIgnoreCase) == true);
+        if (theme == null) return;
+        static double Lum(Color c) => (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) / 255;
+        var bases = theme.Keys.OfType<string>().Where(k => k.Contains("Accent", StringComparison.OrdinalIgnoreCase) && theme[k] is SolidColorBrush { IsFrozen: false }).Select(k => ((SolidColorBrush)theme[k]).Color).Where(c => c.A > 0xA0 && Lum(c) is > 0.05 and < 0.98).ToList();
+        if (!theme.Contains("AccentFillColorDefaultBrush") || theme["AccentFillColorDefaultBrush"] is not SolidColorBrush def) return;
+        var defC = def.Color; var shades = bases.Select(c => (c.R, c.G, c.B)).Distinct().ToHashSet();
+        int n = 0;
+        foreach (var key in theme.Keys.OfType<string>().ToList())
+        {
+            if (theme[key] is not SolidColorBrush b || b.IsFrozen) continue;
+            var c = b.Color;
+            if (key.StartsWith("TextOnAccentFill", StringComparison.Ordinal)) { b.SetCurrentValue(SolidColorBrush.ColorProperty, Color.FromArgb(c.A, onAc.R, onAc.G, onAc.B)); n++; continue; }
+            if (!shades.Contains((c.R, c.G, c.B))) continue;
+            double f = Lum(defC) <= 0 ? 1 : Lum(c) / Lum(defC);
+            var t = f <= 1 ? Color.FromRgb((byte)(ac.R * f), (byte)(ac.G * f), (byte)(ac.B * f)) : Palette.Lerp(ac, Colors.White, Math.Min(1, (f - 1) * 1.2));
+            b.SetCurrentValue(SolidColorBrush.ColorProperty, Color.FromArgb(c.A, t.R, t.G, t.B)); n++;
+        }
+        Log.Debug("Theme", $"Recolored {n} theme brushes");
+    }
+
     public static void Apply(AppSettings s)
     {
         var app = Application.Current; if (app == null) return;
@@ -24,12 +50,8 @@ public static class ThemeManager
         double lum = (0.299 * accent.R + 0.587 * accent.G + 0.114 * accent.B) / 255;
         app.Resources["AccentFgBrush"] = new SolidColorBrush(dark ? (lum > 0.5 ? Color.FromRgb(4, 20, 14) : Colors.White) : Colors.White);
         var ac = ((SolidColorBrush)app.Resources["AccentBrush"]).Color;
-        void SetB(string k, Color c) => app.Resources[k] = new SolidColorBrush(c);
-        SetB("AccentFillColorDefaultBrush", ac); SetB("AccentFillColorSecondaryBrush", Color.FromArgb(230, ac.R, ac.G, ac.B)); SetB("AccentFillColorTertiaryBrush", Color.FromArgb(180, ac.R, ac.G, ac.B));
-        SetB("AccentTextFillColorPrimaryBrush", ac); SetB("AccentTextFillColorSecondaryBrush", ac); SetB("AccentTextFillColorTertiaryBrush", ac);
-        var onAc = ((SolidColorBrush)app.Resources["AccentFgBrush"]).Color; SetB("TextOnAccentFillColorPrimaryBrush", onAc); SetB("TextOnAccentFillColorSecondaryBrush", onAc);
-        foreach (var k in new[] { "SystemAccentColor", "SystemAccentColorLight1", "SystemAccentColorLight2", "SystemAccentColorLight3", "SystemAccentColorDark1", "SystemAccentColorDark2", "SystemAccentColorDark3", "SystemAccentColorSecondary" }) app.Resources[k] = ac;
-        SetB("SystemAccentColorBrush", ac);
+        var onAc = ((SolidColorBrush)app.Resources["AccentFgBrush"]).Color;
+        RecolorTheme(app, ac, onAc);
         foreach (Window w in app.Windows) { w.FontSize = 13 * s.FontScale; }
     }
 }

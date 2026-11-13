@@ -2,8 +2,9 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="clr-namespace:RadioForge.App.Controls">
-    <Grid>
-        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="400"/></Grid.ColumnDefinitions>
+    <Grid x:Name="Split">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="560"/><ColumnDefinition Width="8"/><ColumnDefinition Width="400" MinWidth="280"/></Grid.ColumnDefinitions>
+        <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch" ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Background="Transparent" Cursor="SizeWE" ToolTip="Drag to resize"/>
         <Grid>
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
@@ -58,7 +59,7 @@
             </Grid>
         </Grid>
 
-        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Margin="12,0,0,0">
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <Border Style="{StaticResource Card}" Margin="0,0,0,10">
                     <StackPanel DataContext="{Binding Station.Profile.Audio.Mic}">

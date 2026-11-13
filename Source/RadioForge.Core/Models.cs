@@ -234,6 +234,9 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private string _visBackground = "";
     [ObservableProperty] private string _visImage = "";
     public Dictionary<string, string> Shortcuts { get; set; } = DefaultShortcuts();
+    /// <summary>Actions whose shortcut is registered system-wide (works while another app has focus). Only combos with a modifier or an F-key are accepted.</summary>
+    public HashSet<string> GlobalShortcuts { get; set; } = new() { "StartBroadcast", "StopBroadcast" };
+    public Dictionary<string, double> Layout { get; set; } = new();
 
     public static Dictionary<string, string> DefaultShortcuts() => new()
     {

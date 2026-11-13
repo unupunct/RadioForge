@@ -1,6 +1,6 @@
 ; RadioForge installer (Inno Setup 6). Build with scripts\build-installer.ps1
 #define AppName "RadioForge"
-#define AppVersion "1.0.0"
+#define AppVersion "1.1.0"
 #define AppPublisher "RadioForge"
 #define AppURL "https://github.com/unupunct/RadioForge"
 
@@ -13,7 +13,7 @@ AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}/issues
 AppUpdatesURL={#AppURL}/releases
-VersionInfoVersion=1.0.0.0
+VersionInfoVersion=1.1.0.0
 VersionInfoCompany={#AppPublisher}
 VersionInfoProductName={#AppName}
 VersionInfoDescription={#AppName} Setup

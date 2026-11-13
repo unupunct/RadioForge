@@ -40,7 +40,8 @@
                     </StackPanel>
                     <c:LabeledSlider Label="Font scaling" LabelWidth="110" Minimum="0.8" Maximum="1.6" Step="0.05" Value="{Binding FontScale, Mode=TwoWay}" Format="P0"/>
                     <Button Content="Apply scaling" Click="OnTheme" HorizontalAlignment="Left" Margin="0,4,0,0"/>
-                    <TextBlock Text="Panels resize with the window; the visualizer, soundboard grid and mixer adapt to the available space." Style="{StaticResource Muted}" FontSize="11.5" Margin="0,6,0,0"/>
+                    <TextBlock Text="Panel arrangement: drag the dividers between panels (Servers, Playlists, Studio) and collapse the sidebar with ☰ — sizes are remembered." Style="{StaticResource Muted}" FontSize="11.5" Margin="0,6,0,0"/>
+                    <Button Content="Reset panel layout" Click="OnResetLayout" HorizontalAlignment="Left" Margin="0,6,0,0"/>
                 </StackPanel>
             </Border>
 
@@ -61,8 +62,9 @@
             <Border Style="{StaticResource Card}" Margin="0,0,0,10">
                 <StackPanel>
                     <TextBlock Text="KEYBOARD SHORTCUTS" Style="{StaticResource H2}"/>
-                    <TextBlock Text="Active while RadioForge is focused (so they never clash with other applications). Click a shortcut, then press the new combination." Style="{StaticResource Muted}" FontSize="11.5"/>
+                    <TextBlock Text="Click a shortcut, then press the new combination. Tick “System-wide” to make it work while another application has focus (needs Ctrl/Shift/Alt or an F-key; by default only Start/Stop broadcast are system-wide so they cannot clash with other programs)." Style="{StaticResource Muted}" FontSize="11.5"/>
                     <ItemsControl x:Name="Shortcuts" Margin="0,8,0,0"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel></ItemsControl>
+                    <TextBlock x:Name="HotkeyMsg" Style="{StaticResource Muted}" Margin="0,6,0,0"/>
                     <Button Content="Reset to defaults" Click="OnResetKeys" HorizontalAlignment="Left" Margin="0,8,0,0"/>
                 </StackPanel>
             </Border>
@@ -88,6 +90,11 @@
                     <TextBlock Text="ADVANCED" Style="{StaticResource H2}"/>
                     <DockPanel Margin="0,0,0,6"><TextBlock Text="FFmpeg path" Width="140" VerticalAlignment="Center"/><Button Content="Detect" Click="OnDetectFfmpeg" DockPanel.Dock="Right" Margin="4,0,0,0"/><Button Content="…" Click="OnFfmpeg" DockPanel.Dock="Right" Margin="4,0,0,0"/><TextBox Text="{Binding FfmpegPath}" ToolTip="(automatic: PATH / app folder)"/></DockPanel>
                     <TextBlock x:Name="FfmpegInfo" Style="{StaticResource Muted}" FontSize="11.5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Button x:Name="FfDl" Content="⭳ Download FFmpeg (LGPL build, ~175 MB)" Click="OnDownloadFfmpeg"/>
+                        <ProgressBar x:Name="FfProg" Width="160" Height="6" Maximum="1" Margin="12,0,0,0" Visibility="Collapsed" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="FfDlMsg" Style="{StaticResource Muted}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
                     <CheckBox Content="Debug logging" IsChecked="{Binding DebugLogging}" Click="OnDebug" Margin="0,6,0,0"/>
                     <Button Content="Copy diagnostics to clipboard" Click="OnDiag" HorizontalAlignment="Left" Margin="0,8,0,0"/>
                 </StackPanel>

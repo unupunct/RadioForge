@@ -10,7 +10,7 @@ namespace RadioForge.App.Views;
 public partial class StudioView : UserControl
 {
     private bool _ready;
-    public StudioView() { InitializeComponent(); Loaded += (_, _) => Init(); }
+    public StudioView() { InitializeComponent(); LayoutPersist.Attach(Split, "studio"); Loaded += (_, _) => Init(); }
 
     private void Init()
     {

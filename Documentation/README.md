@@ -23,12 +23,12 @@ The setup wizard asks for station info, your streaming server, audio devices and
 | **Audio Settings** | Devices, sample rate, latency/buffer, aux and system-audio capture. |
 | **Statistics** | Per-server table and charts (bitrate, listeners, availability, stability), uptime, CSV export, event log. |
 | **Logs** | Structured, redacted logs (also written to `%APPDATA%\RadioForge\logs`). |
-| **Application Settings** | Profiles (import/export without passwords), theme, accent, font scaling, tray/close behaviour, notifications, keyboard shortcuts, storage, backup/restore, FFmpeg path, diagnostics. |
+| **Application Settings** | Layout reset, profiles (import/export without passwords), theme, accent, font scaling, tray/close behaviour, notifications, keyboard shortcuts, storage, backup/restore, FFmpeg path, diagnostics. |
 
 ## Keyboard shortcuts (defaults, configurable)
 `Space` play/pause · `Ctrl+N` next track · `Ctrl+R` start/stop recording · `F1` microphone · `F2`–`F5` jingles 1–4 · `Ctrl+Shift+B` start broadcast · `Ctrl+Shift+S` stop broadcast.
 
-Shortcuts work while RadioForge has focus (deliberately not global, so they never collide with other programs). Unmodified keys are ignored while you type in a text box.
+Shortcuts work while RadioForge has focus. In *Application Settings → Keyboard shortcuts* you can tick **System-wide** for any shortcut so it also works while another program has focus (requires Ctrl/Shift/Alt or an F-key; Start/Stop broadcast are system-wide by default). If another program already owns the combination, RadioForge tells you. Unmodified keys are ignored while you type in a text box.
 
 ## Running in the background
 Closing the window during a broadcast asks whether to keep broadcasting in the system tray. The tray icon shows a red dot when on air and offers Open / Start-Stop broadcast / Exit. RadioForge cannot broadcast while Windows is shut down or asleep or while the application is not running — scheduled events only fire while it runs.
@@ -37,4 +37,4 @@ Closing the window during a broadcast asks whether to keep broadcasting in the s
 `%APPDATA%\RadioForge` — `settings.json`, `profiles\<id>\profile.json` and `radioforge.db` (SQLite: library, playlists, schedule, recording history, statistics), `logs`, `backups` (rolling automatic backups of the config files). Server passwords are stored encrypted with **Windows DPAPI (current user)**; they never appear in logs or exports, so an imported profile needs its passwords re-entered.
 
 ## Encoding
-MP3 uses the built-in LAME encoder. **AAC and Ogg Vorbis streaming and FLAC recording need FFmpeg** — install it (for example `winget install Gyan.FFmpeg`) or set its path in *Application Settings → Advanced*. Destinations with identical MP3/AAC settings share one encoder; Ogg destinations always get their own.
+MP3 uses the built-in LAME encoder. **AAC and Ogg Vorbis streaming and FLAC recording need FFmpeg** — use *Application Settings → Advanced → Download FFmpeg* (LGPL build from the BtbN project, about 175 MB, stored in your data folder), install your own (for example `winget install Gyan.FFmpeg`), or set its path there. Destinations with identical MP3/AAC settings share one encoder; Ogg destinations always get their own.

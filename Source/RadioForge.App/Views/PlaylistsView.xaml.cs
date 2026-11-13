@@ -21,7 +21,7 @@ public partial class PlaylistsView : UserControl
     private List<Track> _items = new(); private long _currentId; private bool _loading;
     private ShellViewModel Vm => (ShellViewModel)DataContext;
     private Database Db => Vm.Station.Db;
-    public PlaylistsView() { InitializeComponent(); Loaded += (_, _) => { LoadLists(); OnFind(null!, null!); UpdateInfo(); }; }
+    public PlaylistsView() { InitializeComponent(); LayoutPersist.Attach(Split, "playlists"); Loaded += (_, _) => { LoadLists(); OnFind(null!, null!); UpdateInfo(); }; }
 
     private void LoadLists()
     {

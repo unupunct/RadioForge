@@ -28,6 +28,7 @@ public partial class MainWindow : Window
         FontSize = 13 * App.Settings.FontScale;
         _vm.NavigateRequested += Show; Show(PageId.Dashboard);
         BuildTray();
+        SourceInitialized += (_, _) => { _hotkeys = new GlobalHotkeys(this, a => Dispatcher.BeginInvoke(() => RunAction(a))); _hotkeys.Refresh(); };
         _vm.Balloon += (t, m) => { try { _tray?.ShowBalloonTip(5000, t, m, System.Windows.Forms.ToolTipIcon.Info); } catch { } };
         PreviewKeyDown += OnKey; PreviewKeyUp += OnKeyUp;
         StateChanged += (_, _) => { if (WindowState == WindowState.Minimized && App.Settings.MinimizeToTray) Hide(); };
@@ -96,7 +97,7 @@ public partial class MainWindow : Window
     /// <summary>Closes this window without prompting so a new station/window can take over (profile switch, restore).</summary>
     public void CloseForReload()
     {
-        _closingConfirmed = true;
+        _closingConfirmed = true; _hotkeys?.Dispose();
         if (_tray != null) { _tray.Visible = false; _tray.Dispose(); _tray = null; }
         Close();
     }
@@ -107,7 +108,7 @@ public partial class MainWindow : Window
     {
         _closingConfirmed = true;
         try { await _vm.Station.StopBroadcastAsync(); } catch { }
-        _tray!.Visible = false; _tray.Dispose();
+        _hotkeys?.Dispose(); _tray!.Visible = false; _tray.Dispose();
         App.ExitRequested = true;
         Application.Current.Shutdown();
     }
@@ -151,26 +152,31 @@ public partial class MainWindow : Window
         if (typing && desc.StartsWith("Ctrl+") && desc is not ("Ctrl+N" or "Ctrl+R") ) { }
         var st = _vm.Station; var map = App.Settings.Shortcuts;
         string? action = map.FirstOrDefault(kv => string.Equals(kv.Value, desc, StringComparison.OrdinalIgnoreCase)).Key;
-        if (action != null)
-        {
-            switch (action)
-            {
-                case "PlayPause": st.PlayPause(); break;
-                case "NextTrack": st.NextTrack(); break;
-                case "ToggleRecording": _vm.ToggleRecordingCommand.Execute(null); break;
-                case "ToggleMic": st.ToggleMic(); break;
-                case "StartBroadcast": _vm.StartBroadcastCommand.Execute(null); break;
-                case "StopBroadcast": _vm.StopBroadcastCommand.Execute(null); break;
-                default:
-                    if (action.StartsWith("Pad") && int.TryParse(action[3..], out var n) && n >= 1 && n <= st.Profile.Soundboard.Pads.Count) st.PlayPad(st.Profile.Soundboard.Pads[n - 1]);
-                    break;
-            }
-            e.Handled = true; return;
-        }
+        if (action != null) { RunAction(action); e.Handled = true; return; }
         var pad = st.Profile.Soundboard.Pads.FirstOrDefault(p => p.HotkeyMatches(desc));
         if (pad != null) { st.PlayPad(pad); e.Handled = true; }
     }
 
+    /// <summary>Runs a named shortcut action (used by in-app and system-wide hotkeys).</summary>
+    public void RunAction(string action)
+    {
+        var st = _vm.Station;
+        switch (action)
+        {
+            case "PlayPause": st.PlayPause(); break;
+            case "NextTrack": st.NextTrack(); break;
+            case "ToggleRecording": _vm.ToggleRecordingCommand.Execute(null); break;
+            case "ToggleMic": st.ToggleMic(); break;
+            case "StartBroadcast": _vm.StartBroadcastCommand.Execute(null); break;
+            case "StopBroadcast": _vm.StopBroadcastCommand.Execute(null); break;
+            default:
+                if (action.StartsWith("Pad") && int.TryParse(action[3..], out var n) && n >= 1 && n <= st.Profile.Soundboard.Pads.Count) st.PlayPad(st.Profile.Soundboard.Pads[n - 1]);
+                break;
+        }
+    }
+
+    private GlobalHotkeys? _hotkeys;
+    public GlobalHotkeys Hotkeys => _hotkeys!;
     public static Action<string>? CaptureNext;
     private void OnKeyUp(object s, KeyEventArgs e) { }
 }

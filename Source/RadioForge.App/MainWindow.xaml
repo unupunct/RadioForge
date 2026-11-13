@@ -47,6 +47,8 @@
 
         <!-- SIDEBAR -->
         <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,1,0">
+            <DockPanel>
+            <Button DockPanel.Dock="Bottom" Content="☰" Command="{Binding ToggleNavCommand}" Margin="8" Padding="0,6" ToolTip="Collapse / expand the sidebar" HorizontalAlignment="Stretch"/>
             <ListBox x:Name="Nav" ItemsSource="{x:Static Member=vm:ShellViewModel.NavItems}" xmlns:vm="clr-namespace:RadioForge.App.ViewModels"
                      SelectedItem="{Binding SelectedNav, Mode=TwoWay}" ItemContainerStyle="{StaticResource NavItem}"
                      Background="Transparent" BorderThickness="0" Padding="0,10" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -54,11 +56,12 @@
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding Icon}" FontSize="17" Width="28" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Title}" FontSize="13.5" VerticalAlignment="Center" Margin="6,0,10,0"/>
+                            <TextBlock Text="{Binding Title}" FontSize="13.5" VerticalAlignment="Center" Margin="6,0,10,0" Visibility="{Binding DataContext.ShowNavText, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolVis}}"/>
                         </StackPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
+            </DockPanel>
         </Border>
 
         <!-- WORKSPACE -->

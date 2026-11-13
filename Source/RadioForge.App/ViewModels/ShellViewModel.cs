@@ -54,6 +54,9 @@ public sealed partial class ShellViewModel : ObservableObject
     [ObservableProperty] private double _trackProgress;
     [ObservableProperty] private string _broadcastButtonText = "START BROADCAST";
     [ObservableProperty] private string _toast = "";
+    [ObservableProperty] private bool _showNavText = true;
+    partial void OnShowNavTextChanged(bool value) { Settings.Layout["nav.expanded"] = value ? 1 : 0; ProfileStore.SaveSettings(Settings); }
+    [RelayCommand] private void ToggleNav() => ShowNavText = !ShowNavText;
 
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private TimeSpan _lastCpu; private DateTime _lastCpuAt = DateTime.UtcNow;
@@ -64,6 +67,7 @@ public sealed partial class ShellViewModel : ObservableObject
     public ShellViewModel(StationController station)
     {
         Station = station; StationName = station.Profile.Name;
+        _showNavText = !station.Settings.Layout.TryGetValue("nav.expanded", out var navx) || navx > 0;
         station.Notifications.Raised += n => Application.Current.Dispatcher.BeginInvoke(() => { Toast = $"{n.Title}: {n.Message}"; Balloon?.Invoke(n.Title, n.Message); });
         _timer.Tick += (_, _) => Update(); _timer.Start(); Update();
     }

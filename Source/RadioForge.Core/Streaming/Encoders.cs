@@ -18,11 +18,49 @@ public interface IEncoder : IDisposable
 
 public static class Ffmpeg
 {
+    /// <summary>Where the in-app downloader puts ffmpeg.exe (per user, no admin rights needed).</summary>
+    public static string DownloadedPath => Path.Combine(AppPaths.Root, "ffmpeg", "ffmpeg.exe");
+    public const string DownloadUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-lgpl.zip";
+
+    /// <summary>Downloads the LGPL FFmpeg build from the BtbN project on GitHub (only when the user asks) and extracts ffmpeg.exe. Returns its path.</summary>
+    public static async Task<string> DownloadAsync(IProgress<double>? progress = null, CancellationToken ct = default, string? url = null)
+    {
+        var dest = DownloadedPath; Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+        var zip = dest + ".zip.part";
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(20) };
+            using var resp = await http.GetAsync(url ?? DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct);
+            resp.EnsureSuccessStatusCode();
+            long total = resp.Content.Headers.ContentLength ?? 0;
+            await using (var src = await resp.Content.ReadAsStreamAsync(ct))
+            await using (var dst = File.Create(zip))
+            {
+                var buf = new byte[81920]; long read = 0; int n;
+                while ((n = await src.ReadAsync(buf, ct)) > 0) { await dst.WriteAsync(buf.AsMemory(0, n), ct); read += n; if (total > 0) progress?.Report(read / (double)total * 0.9); }
+            }
+            using (var za = System.IO.Compression.ZipFile.OpenRead(zip))
+            {
+                var entry = za.Entries.FirstOrDefault(e => e.FullName.EndsWith("/bin/ffmpeg.exe", StringComparison.OrdinalIgnoreCase)) ?? throw new InvalidDataException("ffmpeg.exe not found in the downloaded archive.");
+                System.IO.Compression.ZipFileExtensions.ExtractToFile(entry, dest + ".new", true);
+            }
+            File.Move(dest + ".new", dest, true);
+            progress?.Report(1);
+            string check = "";
+            try { check = await RunAsync(dest, "-hide_banner -version"); } catch (Exception) { }
+            if (!check.Contains("ffmpeg version")) { try { File.Delete(dest); } catch { } throw new InvalidDataException("The downloaded ffmpeg.exe does not run on this PC."); }
+            Log.Info("FFmpeg", "Downloaded FFmpeg to " + dest);
+            return dest;
+        }
+        finally { try { File.Delete(zip); } catch { } }
+    }
+
     public static string? Locate(string? configured)
     {
         if (!string.IsNullOrWhiteSpace(configured) && File.Exists(configured)) return configured;
         var local = Path.Combine(AppContext.BaseDirectory, "ffmpeg", "ffmpeg.exe");
         if (File.Exists(local)) return local;
+        if (File.Exists(DownloadedPath)) return DownloadedPath;
         foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries))
         {
             try { var p = Path.Combine(dir.Trim('"'), "ffmpeg.exe"); if (File.Exists(p)) return p; } catch { }

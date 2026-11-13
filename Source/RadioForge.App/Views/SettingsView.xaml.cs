@@ -36,9 +36,10 @@ public partial class SettingsView : UserControl
         TzBox.ItemsSource = TimeZoneInfo.GetSystemTimeZones();
         foreach (var c in new[] { "#00E5A0", "#00B8FF", "#FF3DCB", "#FFD23F", "#FF6B3D", "#9B7BFF" })
         { var b = new Button { Width = 22, Height = 22, Margin = new Thickness(0, 0, 4, 0), Background = new System.Windows.Media.SolidColorBrush(Palette.Parse(c, System.Windows.Media.Colors.Gray)) }; b.Click += (_, _) => { App.Settings.AccentColor = c; ThemeManager.Apply(App.Settings); }; Swatches.Children.Add(b); }
-        Loaded += (_, _) => { LoadProfiles(); BuildShortcuts(); LogsPath.Text = AppPaths.Logs; UpdateFfmpeg(); AboutText.Text = $"RadioForge {typeof(App).Assembly.GetName().Version?.ToString(3)} · .NET {Environment.Version} · NAudio / LAME (LGPL) · data folder: {AppPaths.Root}"; };
+        Loaded += (_, _) => { LoadProfiles(); BuildShortcuts(); ApplyHotkeys(); LogsPath.Text = AppPaths.Logs; UpdateFfmpeg(); AboutText.Text = $"RadioForge {typeof(App).Assembly.GetName().Version?.ToString(3)} · .NET {Environment.Version} · NAudio / LAME (LGPL) · data folder: {AppPaths.Root}"; };
     }
 
+    private void OnResetLayout(object s, RoutedEventArgs e) { LayoutPersist.Reset(); Vm.ShowNavText = true; MessageBox.Show("Panel sizes were reset. They return to the defaults the next time you open each page after restarting RadioForge."); }
     private void OnTheme(object s, RoutedEventArgs e) { if (!IsLoaded) return; ThemeManager.Apply(App.Settings); foreach (Window w in Application.Current.Windows) w.FontSize = 13 * App.Settings.FontScale; ProfileStore.SaveSettings(App.Settings); }
 
     // ---- profiles
@@ -108,13 +109,20 @@ public partial class SettingsView : UserControl
                 {
                     var clash = App.Settings.Shortcuts.FirstOrDefault(x => x.Key != key && x.Value == k).Key;
                     if (clash != null) { btn.Content = App.Settings.Shortcuts[key]; MessageBox.Show($"{k} is already used by \"{(Names.TryGetValue(clash, out var n) ? n : clash)}\"."); return; }
-                    App.Settings.Shortcuts[key] = k; btn.Content = k; ProfileStore.SaveSettings(App.Settings);
+                    App.Settings.Shortcuts[key] = k; btn.Content = k; ProfileStore.SaveSettings(App.Settings); ApplyHotkeys();
                 };
             };
-            Shortcuts.Items.Add(new StackPanel { Orientation = Orientation.Horizontal, Width = 380, Margin = new Thickness(0, 3, 0, 3), Children = { new TextBlock { Text = Names.TryGetValue(key, out var nm) ? nm : key, Width = 160, VerticalAlignment = VerticalAlignment.Center }, btn } });
+            var glob = new CheckBox { Content = "System-wide", IsChecked = App.Settings.GlobalShortcuts.Contains(key), Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Also works while another application has focus. Needs a Ctrl/Shift/Alt combination or an F-key." };
+            glob.Click += (_, _) => { if (glob.IsChecked == true) App.Settings.GlobalShortcuts.Add(key); else App.Settings.GlobalShortcuts.Remove(key); ProfileStore.SaveSettings(App.Settings); ApplyHotkeys(); };
+            Shortcuts.Items.Add(new StackPanel { Orientation = Orientation.Horizontal, Width = 560, Margin = new Thickness(0, 3, 0, 3), Children = { new TextBlock { Text = Names.TryGetValue(key, out var nm) ? nm : key, Width = 160, VerticalAlignment = VerticalAlignment.Center }, btn, glob } });
         }
     }
-    private void OnResetKeys(object s, RoutedEventArgs e) { App.Settings.Shortcuts = AppSettings.DefaultShortcuts(); ProfileStore.SaveSettings(App.Settings); BuildShortcuts(); }
+    private void OnResetKeys(object s, RoutedEventArgs e) { App.Settings.Shortcuts = AppSettings.DefaultShortcuts(); App.Settings.GlobalShortcuts = new() { "StartBroadcast", "StopBroadcast" }; ProfileStore.SaveSettings(App.Settings); BuildShortcuts(); ApplyHotkeys(); }
+    private void ApplyHotkeys()
+    {
+        var hk = ((MainWindow)Application.Current.MainWindow).Hotkeys; hk.Refresh();
+        HotkeyMsg.Text = hk.Failures.Count == 0 ? (App.Settings.GlobalShortcuts.Count == 0 ? "" : "System-wide hotkeys active.") : "⚠ " + string.Join("; ", hk.Failures.Select(f => $"{(Names.TryGetValue(f.Key, out var n) ? n : f.Key)}: {f.Value}"));
+    }
 
     // ---- storage
     private void OnMusicFolder(object s, RoutedEventArgs e) { var d = new System.Windows.Forms.FolderBrowserDialog { SelectedPath = App.Settings.MusicFolder }; if (d.ShowDialog() == System.Windows.Forms.DialogResult.OK) App.Settings.MusicFolder = d.SelectedPath; }
@@ -140,6 +148,14 @@ public partial class SettingsView : UserControl
 
     // ---- advanced
     private void UpdateFfmpeg() { var f = Ffmpeg.Locate(App.Settings.FfmpegPath); FfmpegInfo.Text = f == null ? "FFmpeg not found — MP3 and WAV work without it; AAC, Ogg and FLAC need it." : "Using: " + f; }
+    private async void OnDownloadFfmpeg(object s, RoutedEventArgs e)
+    {
+        if (MessageBox.Show("RadioForge will download FFmpeg (LGPL build, about 175 MB) from " + Ffmpeg.DownloadUrl + " — it is stored in your RadioForge data folder and only used for AAC/Ogg streaming and FLAC recording. Continue?", "Download FFmpeg", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        FfDl.IsEnabled = false; FfProg.Visibility = Visibility.Visible; FfProg.Value = 0; FfDlMsg.Text = "Downloading…";
+        try { var path = await Ffmpeg.DownloadAsync(new Progress<double>(p => FfProg.Value = p)); App.Settings.FfmpegPath = path; FfDlMsg.Text = "Installed."; UpdateFfmpeg(); }
+        catch (Exception ex) { FfDlMsg.Text = "Download failed: " + ex.Message; }
+        finally { FfDl.IsEnabled = true; FfProg.Visibility = Visibility.Collapsed; }
+    }
     private void OnDetectFfmpeg(object s, RoutedEventArgs e) { App.Settings.FfmpegPath = ""; UpdateFfmpeg(); }
     private void OnFfmpeg(object s, RoutedEventArgs e) { var d = new Microsoft.Win32.OpenFileDialog { Filter = "ffmpeg.exe|ffmpeg.exe|Executables|*.exe" }; if (d.ShowDialog() == true) { App.Settings.FfmpegPath = d.FileName; UpdateFfmpeg(); } }
     private void OnDebug(object s, RoutedEventArgs e) { Log.DebugEnabled = App.Settings.DebugLogging; }

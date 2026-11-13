@@ -266,3 +266,50 @@ public class EncoderTests
         Assert.Equal(1, hub.ActiveEncoders);
     }
 }
+
+public class FfmpegDownloaderTests
+{
+    private static async Task<(System.Net.Sockets.TcpListener l, int port)> Serve(byte[] body)
+    {
+        var l = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0); l.Start();
+        _ = Task.Run(async () =>
+        {
+            try { using var c = await l.AcceptTcpClientAsync(); using var s = c.GetStream(); var b = new byte[4096]; await s.ReadAsync(b);
+                  var head = System.Text.Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n"); await s.WriteAsync(head); await s.WriteAsync(body); } catch { }
+        });
+        await Task.Delay(10); return (l, ((System.Net.IPEndPoint)l.LocalEndpoint).Port);
+    }
+
+    private static byte[] ZipOf(string entryName, byte[] data)
+    {
+        using var ms = new MemoryStream(); using (var z = new System.IO.Compression.ZipArchive(ms, System.IO.Compression.ZipArchiveMode.Create, true)) { using var e = z.CreateEntry(entryName).Open(); e.Write(data); }
+        return ms.ToArray();
+    }
+
+    [Fact]
+    public async Task Downloader_extracts_and_validates_ffmpeg_from_a_zip()
+    {
+        var real = Ffmpeg.Locate(null); if (real == null) return; // needs an ffmpeg.exe to use as payload
+        using var t = new TempRoot();
+        var (l, port) = await Serve(ZipOf("ffmpeg-build/bin/ffmpeg.exe", File.ReadAllBytes(real)));
+        try
+        {
+            double last = 0; var path = await Ffmpeg.DownloadAsync(new Progress<double>(p => last = p), default, $"http://127.0.0.1:{port}/f.zip");
+            Assert.Equal(Ffmpeg.DownloadedPath, path); Assert.True(File.Exists(path)); Assert.True(await Ffmpeg.HasEncoderAsync(path, "aac"));
+            Assert.Equal(path, Ffmpeg.Locate(@"C:\nope\ffmpeg.exe") is { } f && f == path ? path : Ffmpeg.Locate(@"C:\nope\ffmpeg.exe")); // fallbacks may find PATH first; downloaded path is the app-managed one
+        }
+        finally { l.Stop(); }
+    }
+
+    [Fact]
+    public async Task Downloader_rejects_archives_without_a_working_ffmpeg()
+    {
+        using var t = new TempRoot();
+        var (l, port) = await Serve(ZipOf("x/bin/ffmpeg.exe", new byte[] { 1, 2, 3, 4 }));
+        try { await Assert.ThrowsAnyAsync<Exception>(() => Ffmpeg.DownloadAsync(null, default, $"http://127.0.0.1:{port}/f.zip")); Assert.False(File.Exists(Ffmpeg.DownloadedPath)); }
+        finally { l.Stop(); }
+        var (l2, port2) = await Serve(ZipOf("x/readme.txt", new byte[] { 1 }));
+        try { await Assert.ThrowsAsync<InvalidDataException>(() => Ffmpeg.DownloadAsync(null, default, $"http://127.0.0.1:{port2}/f.zip")); }
+        finally { l2.Stop(); }
+    }
+}
