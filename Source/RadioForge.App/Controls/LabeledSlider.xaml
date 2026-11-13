@@ -1,0 +1,12 @@
+<UserControl x:Class="RadioForge.App.Controls.LabeledSlider"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="root">
+    <Grid Margin="0,2">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="{Binding LabelWidth, ElementName=root}"/><ColumnDefinition Width="*"/><ColumnDefinition Width="74"/></Grid.ColumnDefinitions>
+        <TextBlock Text="{Binding Label, ElementName=root}" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}"/>
+        <Slider Grid.Column="1" Minimum="{Binding Minimum, ElementName=root}" Maximum="{Binding Maximum, ElementName=root}" Value="{Binding Value, ElementName=root, Mode=TwoWay}"
+                TickFrequency="{Binding Step, ElementName=root}" IsSnapToTickEnabled="False" VerticalAlignment="Center" Margin="6,0"/>
+        <TextBlock Grid.Column="2" x:Name="Txt" VerticalAlignment="Center" HorizontalAlignment="Right" FontFamily="Consolas"/>
+    </Grid>
+</UserControl>

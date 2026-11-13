@@ -1,0 +1,146 @@
+<UserControl x:Class="RadioForge.App.Views.ServersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:RadioForge.App.Views"
+             xmlns:s="clr-namespace:System;assembly=System.Runtime">
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <DockPanel Margin="0,0,0,10">
+            <TextBlock Text="Streaming Servers" Style="{StaticResource H1}"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="▶ Start all" Click="OnStartAll" Style="{StaticResource AccentButton}" Margin="0,0,8,0"/>
+                <Button Content="■ Stop all" Click="OnStopAll" Style="{StaticResource DangerButton}"/>
+            </StackPanel>
+        </DockPanel>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="340"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <Border Style="{StaticResource Card}" Padding="8" Margin="0,0,10,0">
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <ListBox x:Name="List" ItemsSource="{Binding Station.Streams.Destinations}" Background="Transparent" BorderThickness="0" SelectionChanged="OnSelect">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="2,4">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <Ellipse Width="12" Height="12" Fill="{Binding State, Converter={StaticResource StateBrush}}" Margin="0,4,10,0" VerticalAlignment="Top"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Profile.Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Profile.BitrateKbps, StringFormat='{}{0} kbps'}" Style="{StaticResource Muted}" FontSize="11.5"/>
+                                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource Muted}" FontSize="11.5" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <WrapPanel Grid.Row="1" Margin="0,8,0,0">
+                        <Button Content="＋ Icecast 2" Click="OnAddIce" Margin="0,0,4,4"/><Button Content="＋ SHOUTcast v1" Click="OnAddSc1" Margin="0,0,4,4"/>
+                        <Button Content="＋ SHOUTcast v2" Click="OnAddSc2" Margin="0,0,4,4"/><Button Content="Duplicate" Click="OnDup" Margin="0,0,4,4"/><Button Content="Delete" Click="OnDelete" Margin="0,0,4,4"/>
+                    </WrapPanel>
+                </Grid>
+            </Border>
+
+            <ScrollViewer x:Name="DetailScroll" Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="Detail" Visibility="Collapsed">
+                    <!-- live status -->
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                        <Grid DataContext="{Binding ElementName=List, Path=SelectedItem}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="STATUS" Style="{StaticResource H2}"/>
+                                <StackPanel Orientation="Horizontal"><Ellipse Width="12" Height="12" Fill="{Binding State, Converter={StaticResource StateBrush}}" Margin="0,0,8,0"/><TextBlock Text="{Binding State}" FontWeight="SemiBold" FontSize="16"/></StackPanel>
+                                <TextBlock Text="{Binding StatusText}" Style="{StaticResource Muted}"/>
+                                <TextBlock Text="{Binding LastError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Visibility="{Binding LastError, Converter={StaticResource NullVis}}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="LIVE" Style="{StaticResource H2}"/>
+                                <TextBlock Text="{Binding BitrateKbps, StringFormat='Bitrate: {0:0} kbps'}"/>
+                                <TextBlock x:Name="UptimeTxt" Text="Uptime: —"/>
+                                <TextBlock Text="{Binding ReconnectCount, StringFormat='Reconnects: {0}'}"/>
+                                <TextBlock Text="{Binding Listeners, StringFormat='Listeners: {0}', TargetNullValue='Listeners: n/a'}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="CONTROL" Style="{StaticResource H2}"/>
+                                <StackPanel Orientation="Horizontal"><Button Content="▶ Start" Click="OnStart" Margin="0,0,6,0"/><Button Content="■ Stop" Click="OnStop"/></StackPanel>
+                                <TextBlock Text="{Binding LastSuccess, StringFormat='Last connected: {0:T}', TargetNullValue='Last connected: never'}" Style="{StaticResource Muted}" Margin="0,6,0,0"/>
+                                <TextBlock Text="{Binding MetadataStatus}" Style="{StaticResource Muted}" FontSize="11"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- configuration -->
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                        <StackPanel x:Name="Editor">
+                            <TextBlock Text="CONFIGURATION" Style="{StaticResource H2}"/>
+                            <TextBlock Text="Changes apply the next time this server connects." Style="{StaticResource Muted}" FontSize="11.5" Margin="0,-4,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Server name" VerticalAlignment="Center"/><TextBox Grid.Column="1" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,3"/>
+                                <TextBlock Grid.Column="3" Text="Server type" VerticalAlignment="Center"/><ComboBox x:Name="TypeBox" Grid.Column="4" SelectedItem="{Binding Type}" Margin="0,3"/>
+                                <TextBlock Grid.Row="1" Text="Host / IP" VerticalAlignment="Center"/><TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Host, UpdateSourceTrigger=LostFocus}" Margin="0,3"/>
+                                <TextBlock Grid.Row="1" Grid.Column="3" Text="Port" VerticalAlignment="Center"/><TextBox Grid.Row="1" Grid.Column="4" Text="{Binding Port, UpdateSourceTrigger=LostFocus}" Margin="0,3" ToolTip="Icecast: server port. SHOUTcast: listener port (the source connects on port + 1)."/>
+                                <TextBlock Grid.Row="2" Text="Username" VerticalAlignment="Center"/><TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Username}" Margin="0,3" ToolTip="Icecast source user (usually 'source')."/>
+                                <TextBlock Grid.Row="2" Grid.Column="3" Text="Password" VerticalAlignment="Center"/><PasswordBox x:Name="Pw" Grid.Row="2" Grid.Column="4" Margin="0,3" PasswordChanged="OnPw"/>
+                                <TextBlock Grid.Row="3" Text="Mount point" VerticalAlignment="Center"/><TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Mount}" Margin="0,3"/>
+                                <TextBlock Grid.Row="3" Grid.Column="3" Text="Stream ID (v2)" VerticalAlignment="Center"/><TextBox Grid.Row="3" Grid.Column="4" Text="{Binding StreamId, UpdateSourceTrigger=LostFocus}" Margin="0,3"/>
+                                <TextBlock Grid.Row="4" Text="Stream name" VerticalAlignment="Center"/><TextBox Grid.Row="4" Grid.Column="1" Text="{Binding StreamName}" Margin="0,3"/>
+                                <TextBlock Grid.Row="4" Grid.Column="3" Text="Genre" VerticalAlignment="Center"/><TextBox Grid.Row="4" Grid.Column="4" Text="{Binding Genre}" Margin="0,3"/>
+                                <TextBlock Grid.Row="5" Text="Description" VerticalAlignment="Center"/><TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Description}" Margin="0,3"/>
+                                <TextBlock Grid.Row="5" Grid.Column="3" Text="Website URL" VerticalAlignment="Center"/><TextBox Grid.Row="5" Grid.Column="4" Text="{Binding Website}" Margin="0,3"/>
+                                <StackPanel Grid.Row="6" Grid.ColumnSpan="5" Orientation="Horizontal" Margin="0,6,0,0">
+                                    <CheckBox Content="Enabled" IsChecked="{Binding Enabled}" Margin="0,0,18,0"/><CheckBox Content="Public listing" IsChecked="{Binding IsPublic}" Margin="0,0,18,0"/>
+                                    <CheckBox Content="Use TLS (https)" IsChecked="{Binding UseTls}" Margin="0,0,18,0"/><CheckBox Content="Send metadata" IsChecked="{Binding SendMetadata}"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="ENCODER (independent per server)" Style="{StaticResource H2}"/>
+                            <WrapPanel x:Name="EncoderPanel">
+                                <StackPanel Margin="0,0,16,6"><TextBlock Text="Format" Style="{StaticResource Muted}"/><ComboBox x:Name="CodecBox" SelectedItem="{Binding Codec}" Width="110"/></StackPanel>
+                                <StackPanel Margin="0,0,16,6"><TextBlock Text="Bitrate (kbps)" Style="{StaticResource Muted}"/><ComboBox x:Name="BitrateBox" IsEditable="True" Text="{Binding BitrateKbps, UpdateSourceTrigger=LostFocus}" Width="100"/></StackPanel>
+                                <StackPanel Margin="0,0,16,6"><TextBlock Text="Sample rate" Style="{StaticResource Muted}"/><ComboBox x:Name="RateBox" SelectedItem="{Binding SampleRate}" Width="100"/></StackPanel>
+                                <StackPanel Margin="0,0,16,6"><TextBlock Text="Channels" Style="{StaticResource Muted}"/><ComboBox x:Name="ChBox" SelectedItem="{Binding Channels}" Width="90"/></StackPanel>
+                                <StackPanel Margin="0,0,16,6"><TextBlock Text="Auto-reconnect" Style="{StaticResource Muted}"/><CheckBox IsChecked="{Binding AutoReconnect}" Content="On"/></StackPanel>
+                                <StackPanel Margin="0,0,16,6"><TextBlock Text="Retry (s)" Style="{StaticResource Muted}"/><TextBox Text="{Binding RetryIntervalSec, UpdateSourceTrigger=LostFocus}" Width="60"/></StackPanel>
+                                <StackPanel Margin="0,0,16,6"><TextBlock Text="Max retry (s)" Style="{StaticResource Muted}"/><TextBox Text="{Binding MaxRetryIntervalSec, UpdateSourceTrigger=LostFocus}" Width="60"/></StackPanel>
+                                <StackPanel Margin="0,0,16,6"><TextBlock Text="Priority" Style="{StaticResource Muted}"/><TextBox Text="{Binding Priority, UpdateSourceTrigger=LostFocus}" Width="50" ToolTip="Lower numbers start first."/></StackPanel>
+                            </WrapPanel>
+                            <TextBlock x:Name="CodecNote" Style="{StaticResource Muted}" FontSize="11.5"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,8">
+                                <TextBlock Text="CONNECTION TEST" Style="{StaticResource H2}"/>
+                                <Button Content="⚡ Test connection" Click="OnTest" HorizontalAlignment="Right" Style="{StaticResource AccentButton}"/>
+                            </DockPanel>
+                            <TextBlock x:Name="TestNote" Style="{StaticResource Muted}" FontSize="11.5" Text="Checks configuration, encoder, reachability, authentication, protocol and mount point. Icecast mounts are opened and closed immediately; no audio is sent."/>
+                            <ItemsControl x:Name="TestSteps" Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="160"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Status, Converter={x:Static local:StepIcon.Instance}}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding Detail}" TextWrapping="Wrap"/></Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="SERVER LOG (newest first)" Style="{StaticResource H2}"/>
+                            <ListBox x:Name="LogBox" Height="170" FontFamily="Consolas" FontSize="11.5" Background="Transparent"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

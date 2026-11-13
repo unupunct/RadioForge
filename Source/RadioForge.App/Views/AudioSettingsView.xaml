@@ -1,0 +1,45 @@
+<UserControl x:Class="RadioForge.App.Views.AudioSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:RadioForge.App.Controls">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+            <TextBlock Text="Audio Settings" Style="{StaticResource H1}" Margin="0,0,0,10"/>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <Grid DataContext="{Binding Station.Profile.Audio}">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <TextBlock Text="DEVICES" Style="{StaticResource H2}" Grid.ColumnSpan="2"/>
+                    <TextBlock Grid.Row="1" Text="Output (speakers)" VerticalAlignment="Center"/><ComboBox x:Name="OutBox" Grid.Row="1" Grid.Column="1" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding OutputDeviceId}" Margin="0,3"/>
+                    <TextBlock Grid.Row="2" Text="Microphone" VerticalAlignment="Center"/><ComboBox x:Name="MicBox" Grid.Row="2" Grid.Column="1" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding Mic.DeviceId}" Margin="0,3"/>
+                    <TextBlock Grid.Row="3" Text="Auxiliary input" VerticalAlignment="Center"/>
+                    <DockPanel Grid.Row="3" Grid.Column="1" Margin="0,3"><CheckBox Content="Enabled" IsChecked="{Binding AuxEnabled}" DockPanel.Dock="Right" Margin="10,0,0,0"/><ComboBox x:Name="AuxBox" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding AuxDeviceId}"/></DockPanel>
+                    <TextBlock Grid.Row="4" Text="System audio (loopback)" VerticalAlignment="Center"/>
+                    <DockPanel Grid.Row="4" Grid.Column="1" Margin="0,3"><CheckBox Content="Enabled" IsChecked="{Binding SystemAudioEnabled}" DockPanel.Dock="Right" Margin="10,0,0,0"/><ComboBox x:Name="SysBox" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding SystemAudioDeviceId}"/></DockPanel>
+                    <TextBlock Grid.Row="5" Grid.Column="1" Style="{StaticResource Muted}" FontSize="11.5" Text="⚠ System audio captures what a Windows output plays. Never select the same device RadioForge outputs to, or the program will feed back into itself."/>
+                    <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="↻ Refresh devices" Click="OnRefresh" Margin="0,0,8,0"/>
+                        <Button Content="Apply devices (restart audio)" Click="OnApply" Style="{StaticResource AccentButton}"/>
+                    </StackPanel>
+                    <TextBlock Grid.Row="7" Grid.ColumnSpan="2" x:Name="Info" Style="{StaticResource Muted}" Margin="0,8,0,0"/>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <StackPanel DataContext="{Binding Station.Profile.Audio}">
+                    <TextBlock Text="ENGINE" Style="{StaticResource H2}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6"><TextBlock Text="Sample rate" Width="170" VerticalAlignment="Center"/><ComboBox x:Name="RateBox" SelectedItem="{Binding SampleRate}" Width="120"/><TextBlock Text="Takes effect after “Apply sample rate”." Style="{StaticResource Muted}" Margin="12,0,0,0" VerticalAlignment="Center"/></StackPanel>
+                    <c:LabeledSlider Label="Buffer / latency" LabelWidth="170" Minimum="20" Maximum="400" Step="10" Value="{Binding LatencyMs, Mode=TwoWay}" Unit="ms" Format="0"/>
+                    <TextBlock Text="Lower latency reacts faster but needs a stable system; raise it if you hear crackles. Applied when audio restarts." Style="{StaticResource Muted}" FontSize="11.5"/>
+                    <Button Content="Apply sample rate / latency (restarts the station engine)" Click="OnRestartEngine" Margin="0,8,0,0" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="CHANNEL ROUTING" Style="{StaticResource H2}"/>
+                    <TextBlock TextWrapping="Wrap" Text="Music, Microphone, Effects, Auxiliary and System audio are mixed into one program bus. The program bus feeds (1) every stream encoder, (2) the recorder, (3) the visualizer and (4) the speakers if “Output to speakers” is on. Microphone monitoring goes to a separate headphone device and is OFF by default."/>
+                    <CheckBox Content="Output program to speakers" IsChecked="{Binding Station.Profile.Audio.SpeakersEnabled}" Margin="0,8,0,0"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

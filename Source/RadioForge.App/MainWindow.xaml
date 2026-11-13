@@ -1,0 +1,113 @@
+<Window x:Class="RadioForge.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:RadioForge.App.Controls"
+        Title="RadioForge" Width="1360" Height="840" MinWidth="1000" MinHeight="640"
+        Background="{DynamicResource AppBgBrush}" Foreground="{DynamicResource TextBrush}"
+        WindowStartupLocation="CenterScreen" Icon="Assets/radioforge.ico">
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="60"/><RowDefinition Height="*"/><RowDefinition Height="44"/></Grid.RowDefinitions>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" MinWidth="64"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+
+        <!-- TOP BAR -->
+        <Border Grid.ColumnSpan="2" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="16,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="150"/><ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source="Assets/icon256.png" Width="32" Height="32" Margin="0,0,10,0"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding StationName}" FontSize="17" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding ProgramText}" Style="{StaticResource Muted}" FontSize="11" Visibility="{Binding ProgramText, Converter={StaticResource NullVis}}"/>
+                    </StackPanel>
+                </StackPanel>
+                <Border Grid.Column="1" Margin="22,0,0,0" CornerRadius="6" Padding="14,5" VerticalAlignment="Center">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="#3A3F47"/>
+                            <Style.Triggers><DataTrigger Binding="{Binding IsOnAir}" Value="True"><Setter Property="Background" Value="#D8222B"/></DataTrigger></Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="{Binding OnAirText}" FontWeight="Bold" Foreground="White" FontSize="14"/>
+                </Border>
+                <TextBlock Grid.Column="2" Text="{Binding ListenersText}" VerticalAlignment="Center" Margin="18,0,0,0" Style="{StaticResource Muted}"/>
+                <StackPanel Grid.Column="3" Margin="26,0,10,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding NowPlayingText}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding ArtistText}" Style="{StaticResource Muted}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <TextBlock Text="MASTER" FontSize="9" Style="{StaticResource Muted}"/>
+                    <c:LevelBar Meter="{Binding Engine.MasterMeter}" IsHorizontal="True" Height="16"/>
+                </StackPanel>
+                <TextBlock Grid.Column="5" Text="{Binding Clock}" FontSize="22" FontFamily="Consolas" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- SIDEBAR -->
+        <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,1,0">
+            <ListBox x:Name="Nav" ItemsSource="{x:Static Member=vm:ShellViewModel.NavItems}" xmlns:vm="clr-namespace:RadioForge.App.ViewModels"
+                     SelectedItem="{Binding SelectedNav, Mode=TwoWay}" ItemContainerStyle="{StaticResource NavItem}"
+                     Background="Transparent" BorderThickness="0" Padding="0,10" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Icon}" FontSize="17" Width="28" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Title}" FontSize="13.5" VerticalAlignment="Center" Margin="6,0,10,0"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- WORKSPACE -->
+        <Grid Grid.Row="1" Grid.Column="1">
+            <ContentControl x:Name="Host" Margin="18"/>
+            <Border x:Name="ToastBar" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,18" CornerRadius="8" Padding="16,10"
+                    Background="{DynamicResource Panel2Brush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
+                    Visibility="{Binding Toast, Converter={StaticResource NullVis}}" MaxWidth="760">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding Toast}" TextWrapping="Wrap" VerticalAlignment="Center" MaxWidth="660"/>
+                    <Button Content="✕" Command="{Binding DismissToastCommand}" Margin="14,0,0,0" Padding="8,2"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- BOTTOM BAR -->
+        <Border Grid.Row="2" Grid.ColumnSpan="2" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0">
+            <Grid Margin="16,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <ToggleButton IsChecked="{Binding Station.Profile.Audio.SpeakersEnabled}" Content="🔊" Padding="8,2" ToolTip="Monitor the program on the output device"/>
+                    <Slider Width="150" Minimum="0" Maximum="1.5" Value="{Binding Station.Profile.Audio.MasterVolume}" VerticalAlignment="Center" Margin="8,0" ToolTip="Master volume"/>
+                    <TextBlock Text="{Binding Station.Profile.Audio.MasterVolume, StringFormat={}{0:P0}}" Width="44" VerticalAlignment="Center" Style="{StaticResource Muted}"/>
+                </StackPanel>
+                <Button Grid.Column="1" Command="{Binding ToggleMicCommand}" Margin="14,0,0,0" Padding="12,3" VerticalAlignment="Center">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                            <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+                            <Style.Triggers><DataTrigger Binding="{Binding MicLive}" Value="True"><Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/></DataTrigger></Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <TextBlock Text="{Binding MicText, StringFormat='🎤 {0}'}" FontWeight="SemiBold"/>
+                </Button>
+                <TextBlock Grid.Column="2" Text="{Binding OutputText, StringFormat='Output: {0}'}" VerticalAlignment="Center" Margin="18,0,0,0" Style="{StaticResource Muted}" TextTrimming="CharacterEllipsis" MaxWidth="360" TextWrapping="NoWrap"/>
+                <TextBlock Grid.Column="3" Text="{Binding RecordingText}" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Muted}"/>
+                <TextBlock Grid.Column="4" Text="{Binding CpuText}" VerticalAlignment="Center" Margin="0,0,18,0" Style="{StaticResource Muted}"/>
+                <Ellipse Grid.Column="5" Width="10" Height="10" Margin="0,0,6,0" VerticalAlignment="Center">
+                    <Ellipse.Style>
+                        <Style TargetType="Ellipse">
+                            <Setter Property="Fill" Value="#7A828C"/>
+                            <Style.Triggers><DataTrigger Binding="{Binding IsOnAir}" Value="True"><Setter Property="Fill" Value="{DynamicResource OkBrush}"/></DataTrigger></Style.Triggers>
+                        </Style>
+                    </Ellipse.Style>
+                </Ellipse>
+                <TextBlock Grid.Column="6" Text="{Binding StreamsText}" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

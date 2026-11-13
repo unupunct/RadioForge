@@ -1,0 +1,94 @@
+<UserControl x:Class="RadioForge.App.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:RadioForge.App.Controls">
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+
+        <UniformGrid Rows="1" Columns="4">
+            <Border Style="{StaticResource Card}" Margin="0,0,10,10">
+                <StackPanel>
+                    <TextBlock Text="BROADCAST" Style="{StaticResource H2}"/>
+                    <TextBlock Text="{Binding OnAirText}" Style="{StaticResource Big}"/>
+                    <TextBlock Text="{Binding UptimeText, StringFormat='Uptime  {0}'}" Style="{StaticResource Muted}" Margin="0,4,0,0"/>
+                    <TextBlock Text="{Binding EncoderText}" Style="{StaticResource Muted}"/>
+                    <TextBlock Text="{Binding RecordingText}" Style="{StaticResource Muted}"/>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="0,0,10,10">
+                <StackPanel>
+                    <TextBlock Text="STREAMING CONNECTIONS" Style="{StaticResource H2}"/>
+                    <TextBlock Text="{Binding StreamsText}" Style="{StaticResource Big}"/>
+                    <TextBlock Text="{Binding ListenersText}" Margin="0,4,0,0"/>
+                    <TextBlock Text="{Binding HealthText, StringFormat='Server health: {0}'}" Style="{StaticResource Muted}"/>
+                    <TextBlock Text="Listener counts come from the servers; n/a means the server does not report them." Style="{StaticResource Muted}" FontSize="10.5"/>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="0,0,10,10">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <Border Width="74" Height="74" CornerRadius="8" Background="{DynamicResource Panel2Brush}" Margin="0,0,12,0" VerticalAlignment="Top">
+                        <Image Source="{Binding Artwork, Converter={StaticResource BytesImage}}" Stretch="UniformToFill"/>
+                    </Border>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="NOW PLAYING" Style="{StaticResource H2}"/>
+                        <TextBlock Text="{Binding NowPlayingText}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding ArtistText}" Style="{StaticResource Muted}" TextTrimming="CharacterEllipsis"/>
+                        <ProgressBar Value="{Binding TrackProgress, Mode=OneWay}" Maximum="1" Height="4" Margin="0,6,0,2" Foreground="{DynamicResource AccentBrush}"/>
+                        <TextBlock Text="{Binding TrackTimeText}" Style="{StaticResource Muted}" FontSize="11"/>
+                        <TextBlock Text="{Binding NextText, StringFormat='Next: {0}'}" Style="{StaticResource Muted}" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="STUDIO" Style="{StaticResource H2}"/>
+                    <TextBlock Text="{Binding MicText}" FontSize="16" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding DuckText}" Foreground="{DynamicResource WarnBrush}"/>
+                    <TextBlock Text="{Binding Station.Profile.Audio.MasterVolume, StringFormat='Master volume  {0:P0}'}" Style="{StaticResource Muted}" Margin="0,4,0,0"/>
+                    <TextBlock Text="{Binding ScheduleText, StringFormat='Next scheduled: {0}'}" Style="{StaticResource Muted}"/>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0" ClipToBounds="True">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Margin="12,12,6,12" Width="46">
+                    <TextBlock Text="INPUT" FontSize="9" Style="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                    <c:LevelBar Meter="{Binding Engine.InputMeter}" Width="30" Height="230" HorizontalAlignment="Center"/>
+                </StackPanel>
+                <c:VisualizerControl x:Name="Vis" Grid.Column="1" Analyzer="{Binding Engine.Analyzer}"/>
+                <StackPanel Grid.Column="2" Margin="6,12,12,12" Width="46">
+                    <TextBlock Text="OUTPUT" FontSize="9" Style="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                    <c:LevelBar Meter="{Binding Engine.MasterMeter}" Width="30" Height="230" HorizontalAlignment="Center"/>
+                </StackPanel>
+                <Border Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="10" Background="#99000000" CornerRadius="8" Padding="8,6">
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox x:Name="PresetBox" Width="250" SelectionChanged="OnPreset"/>
+                        <TextBlock Text="Sens." Foreground="White" VerticalAlignment="Center" Margin="10,0,4,0"/>
+                        <Slider x:Name="SensSlider" Width="80" Minimum="0.3" Maximum="3" Value="1" VerticalAlignment="Center" ValueChanged="OnSens"/>
+                        <ComboBox x:Name="BgBox" Width="100" Margin="8,0,0,0" SelectionChanged="OnBg"/>
+                        <TextBox x:Name="ColA" Width="70" Margin="8,0,0,0" ToolTip="Custom color A (#RRGGBB)" LostFocus="OnColors"/>
+                        <TextBox x:Name="ColB" Width="70" Margin="4,0,0,0" ToolTip="Custom color B (#RRGGBB)" LostFocus="OnColors"/>
+                        <Button Content="🖼" Margin="6,0,0,0" ToolTip="Background image" Click="OnImage"/>
+                        <Button Content="⛶" Margin="6,0,0,0" ToolTip="Fullscreen (Esc to exit)" Click="OnFull"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="{Binding BroadcastButtonText}" Command="{Binding ToggleBroadcastCommand}" Style="{StaticResource AccentButton}" Height="44" MinWidth="190" Margin="0,0,16,0"/>
+                <Button Content="⏮" Command="{Binding PreviousCommand}" Style="{StaticResource Transport}" MinWidth="48" ToolTip="Previous"/>
+                <Button Content="{Binding PlayPauseText}" Command="{Binding PlayPauseCommand}" Style="{StaticResource Transport}" MinWidth="110" ToolTip="Play / Pause (Space)"/>
+                <Button Content="⏭  Next" Command="{Binding NextCommand}" Style="{StaticResource Transport}" ToolTip="Next track"/>
+                <ToggleButton Content="🎤  Microphone" IsChecked="{Binding Station.Profile.Audio.Mic.Muted, Converter={StaticResource InvBool}, Mode=OneWay}" Command="{Binding ToggleMicCommand}" Height="44" Margin="8,0,8,0" Padding="16,0"/>
+                <Button Content="⏺  Record / Stop" Command="{Binding ToggleRecordingCommand}" Height="44" Padding="16,0" Margin="0,0,8,0" x:Name="RecBtn"/>
+                <Button Content="▦  Open soundboard" Command="{Binding OpenSoundboardCommand}" Height="44" Padding="16,0"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

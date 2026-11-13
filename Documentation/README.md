@@ -1,0 +1,40 @@
+# RadioForge — user guide
+
+RadioForge is a Windows internet-radio broadcasting studio: a live mixing console, playlists with Auto DJ, a soundboard, a scheduler, recording, and **several simultaneous streaming destinations** (SHOUTcast v1/v2 and Icecast 2), each with its own encoder settings.
+
+* Installation: [INSTALLATION.md](INSTALLATION.md)
+* Connecting to your streaming host: [STREAMING_SETUP.md](STREAMING_SETUP.md)
+* Problems: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+
+## First start
+The setup wizard asks for station info, your streaming server, audio devices and quality, then runs a connection test. You can skip any step and finish later under **Streaming Servers**, **Audio Settings** and **Application Settings → Run setup wizard**.
+
+## The sections
+| Section | What it does |
+|---|---|
+| **Dashboard** | ON AIR state, connections, listener count (only when the server reports it), now playing / next / program, mic state, input and output meters, real-time visualizer (8 modes, 24 presets, fullscreen), quick actions. |
+| **Studio** | 5 channels (Music, Microphone, Effects, Auxiliary, System) with fader, mute, solo, meters and peak/clip indicator; master volume, balance, limiter, output routing; microphone chain (gain, gate, compressor, 3-band EQ, reverb, echo), push-to-talk, **ducking** (amount, attack, release, threshold), voice monitoring (off by default) and a microphone test. |
+| **Playlist Manager** | Playlists and folders, drag-and-drop, reorder, M3U import/export, random/repeat, crossfade, **Auto DJ**, "use for Auto DJ". |
+| **Soundboard** | 48 pads on 4 pages: name, colour, icon, file, volume, mode (once / loop / over music / replace music / after current track), hotkey, per-pad stop, drag-and-drop, preview mode (plays on your speakers only, never on air). |
+| **Streaming Servers** | Unlimited servers, enable/disable, start/stop one or all, **Test connection**, live bitrate/uptime/reconnects/last error, per-server log. |
+| **Broadcast Scheduler** | Week and month calendar; playlists, programs, ad breaks, jingles, news, pre-recorded shows, announcements; one-off / daily / weekly / monthly repeats; priorities; conflict warnings. Runs while the window is minimized to the tray. |
+| **Audio Library** | Import files/folders, tags and artwork, search, duplicate and missing-file detection. |
+| **Recordings** | Record master, microphone or a single channel to WAV / MP3 / FLAC while streaming; history, playback, delete. |
+| **Audio Settings** | Devices, sample rate, latency/buffer, aux and system-audio capture. |
+| **Statistics** | Per-server table and charts (bitrate, listeners, availability, stability), uptime, CSV export, event log. |
+| **Logs** | Structured, redacted logs (also written to `%APPDATA%\RadioForge\logs`). |
+| **Application Settings** | Profiles (import/export without passwords), theme, accent, font scaling, tray/close behaviour, notifications, keyboard shortcuts, storage, backup/restore, FFmpeg path, diagnostics. |
+
+## Keyboard shortcuts (defaults, configurable)
+`Space` play/pause · `Ctrl+N` next track · `Ctrl+R` start/stop recording · `F1` microphone · `F2`–`F5` jingles 1–4 · `Ctrl+Shift+B` start broadcast · `Ctrl+Shift+S` stop broadcast.
+
+Shortcuts work while RadioForge has focus (deliberately not global, so they never collide with other programs). Unmodified keys are ignored while you type in a text box.
+
+## Running in the background
+Closing the window during a broadcast asks whether to keep broadcasting in the system tray. The tray icon shows a red dot when on air and offers Open / Start-Stop broadcast / Exit. RadioForge cannot broadcast while Windows is shut down or asleep or while the application is not running — scheduled events only fire while it runs.
+
+## Where data lives
+`%APPDATA%\RadioForge` — `settings.json`, `profiles\<id>\profile.json` and `radioforge.db` (SQLite: library, playlists, schedule, recording history, statistics), `logs`, `backups` (rolling automatic backups of the config files). Server passwords are stored encrypted with **Windows DPAPI (current user)**; they never appear in logs or exports, so an imported profile needs its passwords re-entered.
+
+## Encoding
+MP3 uses the built-in LAME encoder. **AAC and Ogg Vorbis streaming and FLAC recording need FFmpeg** — install it (for example `winget install Gyan.FFmpeg`) or set its path in *Application Settings → Advanced*. Destinations with identical MP3/AAC settings share one encoder; Ogg destinations always get their own.

@@ -1,0 +1,8 @@
+bin/
+obj/
+*.user
+.vs/
+Release/
+Installer/Output/
+Installer/*.exe
+*.tmp

@@ -1,0 +1,91 @@
+<Application x:Class="RadioForge.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:RadioForge.App.Converters"
+             ThemeMode="Dark"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <SolidColorBrush x:Key="AppBgBrush" Color="#0E1013"/>
+            <SolidColorBrush x:Key="PanelBrush" Color="#171A1F"/>
+            <SolidColorBrush x:Key="Panel2Brush" Color="#1F2329"/>
+            <SolidColorBrush x:Key="LineBrush" Color="#2A2F37"/>
+            <SolidColorBrush x:Key="TextBrush" Color="#E8ECEF"/>
+            <SolidColorBrush x:Key="MutedBrush" Color="#8A939E"/>
+            <SolidColorBrush x:Key="AccentBrush" Color="#00E5A0"/>
+            <SolidColorBrush x:Key="AccentFgBrush" Color="#04140E"/>
+            <SolidColorBrush x:Key="OkBrush" Color="#00DC82"/>
+            <SolidColorBrush x:Key="DangerBrush" Color="#F04646"/>
+            <SolidColorBrush x:Key="WarnBrush" Color="#F0BE32"/>
+
+            <conv:StateBrushConverter x:Key="StateBrush"/>
+            <conv:HexBrushConverter x:Key="HexBrush"/>
+            <conv:InverseBoolConverter x:Key="InvBool"/>
+            <conv:NullVisConverter x:Key="NullVis"/>
+            <conv:BytesImageConverter x:Key="BytesImage"/>
+            <BooleanToVisibilityConverter x:Key="BoolVis"/>
+
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="10"/>
+                <Setter Property="Padding" Value="14"/>
+            </Style>
+            <Style x:Key="H1" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="22"/><Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            </Style>
+            <Style x:Key="H2" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13"/><Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                <Setter Property="Margin" Value="0,0,0,8"/>
+            </Style>
+            <Style x:Key="Muted" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+            <Style x:Key="Big" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="26"/><Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            </Style>
+            <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AccentFgBrush}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Padding" Value="16,8"/>
+            </Style>
+            <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Padding" Value="16,8"/>
+            </Style>
+            <Style x:Key="Transport" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="MinWidth" Value="64"/><Setter Property="Height" Value="44"/>
+                <Setter Property="FontSize" Value="15"/><Setter Property="Margin" Value="0,0,8,0"/>
+            </Style>
+            <Style x:Key="NavItem" TargetType="ListBoxItem">
+                <Setter Property="Padding" Value="14,10"/>
+                <Setter Property="Margin" Value="8,1"/>
+                <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <Border x:Name="bd" CornerRadius="8" Padding="{TemplateBinding Padding}" Background="Transparent">
+                                <ContentPresenter/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{DynamicResource Panel2Brush}"/></Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource Panel2Brush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
