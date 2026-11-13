@@ -25,7 +25,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         var station = App.Station!;
         _vm = new ShellViewModel(station); DataContext = _vm;
-        FontSize = 13 * App.Settings.FontScale;
+        FontSize = 13 * App.Settings.FontScale; Loaded += (_, _) => Dispatcher.BeginInvoke(() => AutomationHelper.Apply(this), System.Windows.Threading.DispatcherPriority.Loaded);
         _vm.NavigateRequested += Show; Show(PageId.Dashboard);
         BuildTray();
         SourceInitialized += (_, _) => { _hotkeys = new GlobalHotkeys(this, a => Dispatcher.BeginInvoke(() => RunAction(a))); _hotkeys.Refresh(); };
@@ -46,6 +46,7 @@ public partial class MainWindow : Window
             v = id switch
             {
                 PageId.Dashboard => new DashboardView(),
+                PageId.OnAir => new OnAirView(),
                 PageId.Studio => new StudioView(),
                 PageId.Playlists => new PlaylistsView(),
                 PageId.Soundboard => new SoundboardView(),
@@ -59,14 +60,22 @@ public partial class MainWindow : Window
                 _ => new SettingsView(),
             };
             v.DataContext = _vm; _pages[id] = v;
+            v.Loaded += (_, _) => NameLater(v);
         }
-        Host.Content = v;
+        Host.Content = v; NameLater(v);
+    }
+
+    /// <summary>Accessible names are applied after load and again once lazily-created parts exist.</summary>
+    private void NameLater(UserControl v)
+    {
+        Dispatcher.BeginInvoke(() => AutomationHelper.Apply(v), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) }; t.Tick += (_, _) => { t.Stop(); AutomationHelper.Apply(v); AutomationHelper.Apply(this); }; t.Start();
     }
 
     // ------------------------------------------------------------------ tray
     private void BuildTray()
     {
-        using (var s = Application.GetResourceStream(new Uri("pack://application:,,,/Assets/radioforge.ico")).Stream) _iconOff = new System.Drawing.Icon(s);
+        using (var s = Application.GetResourceStream(new Uri("pack://application:,,,/RadioForge;component/Assets/radioforge.ico")).Stream) _iconOff = new System.Drawing.Icon(s);
         _iconOn = MakeLive(_iconOff);
         _tray = new System.Windows.Forms.NotifyIcon { Icon = _iconOff, Visible = true, Text = "RadioForge" };
         var menu = new System.Windows.Forms.ContextMenuStrip();

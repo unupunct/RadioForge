@@ -64,6 +64,7 @@ public partial class App : Application
     private static Mutex? _single;
     public static bool ExitRequested { get; set; }
     public static bool AutoStartBroadcast { get; set; }
+    public static bool AddSamplesOnStart { get; set; }
     public static void ReplaceSettings(AppSettings s) => Settings = s;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -110,6 +111,7 @@ public partial class App : Application
     {
         Station?.Dispose();
         Station = new StationController(Settings, prof, useAudio);
+        if (AddSamplesOnStart) { AddSamplesOnStart = false; try { RadioForge.Core.Station.SampleContent.Create(Station); } catch (Exception ex) { Log.Error("Samples", "Could not create sample content", ex); } }
         Settings.ActiveProfileId = prof.Id; ProfileStore.SaveSettings(Settings);
     }
 

@@ -28,7 +28,7 @@ public static class Screenshots
             await Prepare(st, port); await Task.Delay(1200); win.Shell.DismissToastCommand.Execute(null);
             win.Width = 1400; win.Height = 880; win.UpdateLayout();
             await Task.Delay(3500);
-            var pages = new (PageId id, string file)[] { (PageId.Dashboard, "dashboard"), (PageId.Studio, "studio"), (PageId.Playlists, "playlists"), (PageId.Soundboard, "soundboard"), (PageId.Servers, "servers"), (PageId.Scheduler, "scheduler"), (PageId.Library, "library"), (PageId.Recordings, "recordings"), (PageId.AudioSettings, "audio-settings"), (PageId.Statistics, "statistics"), (PageId.Logs, "logs"), (PageId.Settings, "settings") };
+            var pages = new (PageId id, string file)[] { (PageId.Dashboard, "dashboard"), (PageId.OnAir, "on-air"), (PageId.Studio, "studio"), (PageId.Playlists, "playlists"), (PageId.Soundboard, "soundboard"), (PageId.Servers, "servers"), (PageId.Scheduler, "scheduler"), (PageId.Library, "library"), (PageId.Recordings, "recordings"), (PageId.AudioSettings, "audio-settings"), (PageId.Statistics, "statistics"), (PageId.Logs, "logs"), (PageId.Settings, "settings") };
             foreach (var (id, file) in pages)
             {
                 win.Shell.Navigate(id); await Task.Delay(id == PageId.Dashboard ? 2500 : 1500);

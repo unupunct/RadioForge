@@ -66,14 +66,18 @@
                 </StackPanel>
                 <Border Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="10" Background="#99000000" CornerRadius="8" Padding="8,6">
                     <StackPanel Orientation="Horizontal">
-                        <ComboBox x:Name="PresetBox" Width="250" SelectionChanged="OnPreset"/>
+                        <ComboBox x:Name="PresetBox" AutomationProperties.Name="Visualizer preset" Width="250" SelectionChanged="OnPreset"/>
                         <TextBlock Text="Sens." Foreground="White" VerticalAlignment="Center" Margin="10,0,4,0"/>
                         <Slider x:Name="SensSlider" Width="80" Minimum="0.3" Maximum="3" Value="1" VerticalAlignment="Center" ValueChanged="OnSens"/>
                         <ComboBox x:Name="BgBox" Width="100" Margin="8,0,0,0" SelectionChanged="OnBg"/>
-                        <TextBox x:Name="ColA" Width="70" Margin="8,0,0,0" ToolTip="Custom color A (#RRGGBB)" LostFocus="OnColors"/>
-                        <TextBox x:Name="ColB" Width="70" Margin="4,0,0,0" ToolTip="Custom color B (#RRGGBB)" LostFocus="OnColors"/>
-                        <Button Content="🖼" Margin="6,0,0,0" ToolTip="Background image" Click="OnImage"/>
-                        <Button Content="⛶" Margin="6,0,0,0" ToolTip="Fullscreen (Esc to exit)" Click="OnFull"/>
+                        <TextBlock Text="Colors" Foreground="White" VerticalAlignment="Center" Margin="10,0,4,0"/>
+                        <Border x:Name="SwA" Width="16" Height="16" CornerRadius="3" Margin="0,0,3,0" VerticalAlignment="Center"/>
+                        <TextBox x:Name="ColA" Width="76" ToolTip="Color A (#RRGGBB) — edit to customise" AutomationProperties.Name="Visualizer color A" LostFocus="OnColors"/>
+                        <Border x:Name="SwB" Width="16" Height="16" CornerRadius="3" Margin="6,0,3,0" VerticalAlignment="Center"/>
+                        <TextBox x:Name="ColB" Width="76" ToolTip="Color B (#RRGGBB) — edit to customise" AutomationProperties.Name="Visualizer color B" LostFocus="OnColors"/>
+                        <Button Content="↺" Margin="4,0,0,0" ToolTip="Use the preset colors" AutomationProperties.Name="Reset visualizer colors" Click="OnResetColors"/>
+                        <Button Content="🖼" Margin="6,0,0,0" ToolTip="Choose a background image" AutomationProperties.Name="Choose visualizer background image" Click="OnImage"/>
+                        <Button Content="⛶" Margin="6,0,0,0" ToolTip="Fullscreen visualizer (Esc to exit)" AutomationProperties.Name="Fullscreen visualizer" Click="OnFull"/>
                     </StackPanel>
                 </Border>
             </Grid>

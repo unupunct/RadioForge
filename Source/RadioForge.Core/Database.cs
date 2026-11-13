@@ -4,7 +4,7 @@ using Microsoft.Data.Sqlite;
 
 namespace RadioForge.Core;
 
-public sealed record RecordingInfo(long Id, string Path, DateTime Started, double DurationSec, long Size, string Format, string Source);
+public sealed record RecordingInfo(long Id, string Path, DateTime Started, double DurationSec, long Size, string Format, string Source, string? Title = null);
 public sealed record StatSample(DateTime Time, string ServerId, string Status, double BitrateKbps, int Listeners);
 
 /// <summary>Per-profile SQLite store: library, playlists, schedule, recordings, statistics.</summary>
@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS stats(ts TEXT, server_id TEXT, status TEXT, bitrate R
 CREATE INDEX IF NOT EXISTS ix_stats ON stats(ts);
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);");
         Exec(c, "INSERT OR IGNORE INTO meta(key,value) VALUES('schema','1')");
+        try { Exec(c, "ALTER TABLE tracks ADD COLUMN lufs REAL"); } catch { }
+        try { Exec(c, "ALTER TABLE recordings ADD COLUMN title TEXT"); } catch { }
     }
 
     private static List<T> Query<T>(SqliteConnection c, string sql, Func<SqliteDataReader, T> map, params (string, object?)[] p)
@@ -63,8 +65,9 @@ CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);");
         Album = r.IsDBNull(4) ? "" : r.GetString(4), Genre = r.IsDBNull(5) ? "" : r.GetString(5), Year = (uint)(r.IsDBNull(6) ? 0 : r.GetInt64(6)),
         DurationSec = r.IsDBNull(7) ? 0 : r.GetDouble(7), FileSize = r.IsDBNull(8) ? 0 : r.GetInt64(8),
         Added = DateTime.TryParse(r.IsDBNull(9) ? null : r.GetString(9), out var d) ? d : DateTime.MinValue,
+        Lufs = r.IsDBNull(10) ? null : r.GetDouble(10),
     };
-    private const string TrackCols = "id,path,title,artist,album,genre,year,duration,size,added";
+    private const string TrackCols = "id,path,title,artist,album,genre,year,duration,size,added,lufs";
 
     public static readonly string[] SupportedExtensions = { ".mp3", ".wav", ".flac", ".ogg", ".aac", ".m4a" };
     public static bool IsSupported(string path) => SupportedExtensions.Contains(Path.GetExtension(path).ToLowerInvariant());
@@ -108,6 +111,8 @@ CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);");
         foreach (var t in list) t.Missing = !System.IO.File.Exists(t.Path);
         return list;
     }
+
+    public void SetLufs(long id, double lufs) { using var c = Open(); Exec(c, "UPDATE tracks SET lufs=$l WHERE id=$i", ("$l", lufs), ("$i", id)); }
 
     public void DeleteTrack(long id)
     {
@@ -155,7 +160,7 @@ CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);");
     public List<Track> GetPlaylistTracks(long playlistId)
     {
         using var c = Open();
-        var l = Query(c, $"SELECT t.id,t.path,t.title,t.artist,t.album,t.genre,t.year,t.duration,t.size,t.added FROM playlist_items i JOIN tracks t ON t.id=i.track_id WHERE i.playlist_id=$p ORDER BY i.position", MapTrack, ("$p", playlistId));
+        var l = Query(c, $"SELECT t.id,t.path,t.title,t.artist,t.album,t.genre,t.year,t.duration,t.size,t.added,t.lufs FROM playlist_items i JOIN tracks t ON t.id=i.track_id WHERE i.playlist_id=$p ORDER BY i.position", MapTrack, ("$p", playlistId));
         foreach (var t in l) t.Missing = !System.IO.File.Exists(t.Path);
         return l;
     }
@@ -206,14 +211,14 @@ CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);");
     public void AddRecording(RecordingInfo r)
     {
         using var c = Open();
-        Exec(c, "INSERT INTO recordings(path,started,duration,size,format,source) VALUES($p,$s,$d,$z,$f,$o)",
-            ("$p", r.Path), ("$s", r.Started.ToString("o")), ("$d", r.DurationSec), ("$z", r.Size), ("$f", r.Format), ("$o", r.Source));
+        Exec(c, "INSERT INTO recordings(path,started,duration,size,format,source,title) VALUES($p,$s,$d,$z,$f,$o,$t)",
+            ("$p", r.Path), ("$s", r.Started.ToString("o")), ("$d", r.DurationSec), ("$z", r.Size), ("$f", r.Format), ("$o", r.Source), ("$t", r.Title));
     }
     public List<RecordingInfo> GetRecordings()
     {
         using var c = Open();
-        return Query(c, "SELECT id,path,started,duration,size,format,source FROM recordings ORDER BY started DESC",
-            r => new RecordingInfo(r.GetInt64(0), r.GetString(1), DateTime.Parse(r.GetString(2)), r.GetDouble(3), r.GetInt64(4), r.GetString(5), r.GetString(6)));
+        return Query(c, "SELECT id,path,started,duration,size,format,source,title FROM recordings ORDER BY started DESC",
+            r => new RecordingInfo(r.GetInt64(0), r.GetString(1), DateTime.Parse(r.GetString(2)), r.GetDouble(3), r.GetInt64(4), r.GetString(5), r.GetString(6), r.IsDBNull(7) ? null : r.GetString(7)));
     }
     public void DeleteRecording(long id) { using var c = Open(); Exec(c, "DELETE FROM recordings WHERE id=$i", ("$i", id)); }
 

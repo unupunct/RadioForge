@@ -21,12 +21,13 @@
             <Border Grid.Column="1" Style="{StaticResource Card}">
                 <Grid DataContext="{Binding Station.Profile.Recording}">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <TextBlock Text="Source" VerticalAlignment="Center"/><ComboBox x:Name="SrcBox" Grid.Column="1" SelectedItem="{Binding Source}" Margin="0,3"/>
                     <TextBlock Grid.Row="1" Text="Format" VerticalAlignment="Center"/><ComboBox x:Name="FmtBox" Grid.Row="1" Grid.Column="1" SelectedItem="{Binding Format}" Margin="0,3"/>
                     <TextBlock Grid.Row="2" Text="MP3 bitrate" VerticalAlignment="Center"/><ComboBox x:Name="KbpsBox" Grid.Row="2" Grid.Column="1" SelectedItem="{Binding Mp3Kbps}" Margin="0,3"/>
                     <TextBlock Grid.Row="3" Text="Folder" VerticalAlignment="Center"/>
                     <DockPanel Grid.Row="3" Grid.Column="1" Margin="0,3"><Button Content="…" DockPanel.Dock="Right" Click="OnFolder" Margin="4,0,0,0"/><TextBox Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" ToolTip="(Music\RadioForge Recordings)"/></DockPanel>
+                    <TextBlock Grid.Row="5" Text="Podcast URL" VerticalAlignment="Center"/><TextBox Grid.Row="5" Grid.Column="1" Text="{Binding PodcastBaseUrl, UpdateSourceTrigger=LostFocus}" Margin="0,3" ToolTip="Public web address where you upload this folder, e.g. https://example.com/shows — archived shows are listed in podcast.xml"/>
                     <TextBlock Grid.Row="4" Text="File name" VerticalAlignment="Center"/><TextBox Grid.Row="4" Grid.Column="1" Text="{Binding NamePattern}" Margin="0,3" ToolTip="Tokens: {station} {source} {date} {time}"/>
                 </Grid>
             </Border>
@@ -39,7 +40,7 @@
                     <Button Content="▶ Play" Click="OnPlay" Margin="0,0,6,0"/><Button Content="■ Stop playback" Click="OnStopPlay" Margin="0,0,6,0"/>
                     <Button Content="Open folder" Click="OnOpenFolder" Margin="0,0,6,0"/><Button Content="🗑 Delete" Click="OnDelete"/>
                 </WrapPanel>
-                <DataGrid x:Name="Grid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" Background="Transparent" HeadersVisibility="Column">
+                <DataGrid x:Name="Grid" AutomationProperties.Name="Recording history" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" Background="Transparent" HeadersVisibility="Column">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Started" Binding="{Binding Started, StringFormat='yyyy-MM-dd HH:mm'}" Width="130"/>
                         <DataGridTextColumn Header="Source" Binding="{Binding Source}" Width="90"/>

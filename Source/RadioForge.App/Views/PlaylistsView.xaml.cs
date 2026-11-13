@@ -114,6 +114,26 @@ public partial class PlaylistsView : UserControl
     private void OnDown(object s, RoutedEventArgs e) => Move(1);
     private void OnPlayItem(object s, RoutedEventArgs e) { if (Items.SelectedItem is PlaylistRow r) Vm.Station.PlayPlaylist(_currentId, r.Index - 1, false); }
     private void OnPlayAll(object s, RoutedEventArgs e) { if (EditableList) Vm.Station.PlayPlaylist(_currentId, 0, Vm.Station.Profile.AutoDj.Shuffle); }
+    private System.Windows.Threading.DispatcherTimer? _voiceTimer;
+    private async void OnVoice(object s, RoutedEventArgs e)
+    {
+        var st = Vm.Station;
+        if (!st.Voice.IsRecording)
+        {
+            if (!EditableList) { VoiceBtn.IsChecked = false; VoiceMsg.Text = "Select a playlist first."; return; }
+            var err = st.Voice.Start(st.VoiceFolder); if (err != null) { VoiceBtn.IsChecked = false; VoiceMsg.Text = err; return; }
+            VoiceBtn.Content = "■ Stop voice track"; VoiceMsg.Text = "Recording (not on air)…";
+            _voiceTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) }; _voiceTimer.Tick += (_, _) => VoiceMsg.Text = $"Recording (not on air)… {TimeSpan.FromSeconds(st.Voice.Seconds):m\\:ss}"; _voiceTimer.Start();
+            return;
+        }
+        _voiceTimer?.Stop(); VoiceBtn.Content = "🎙 Record voice track"; VoiceBtn.IsChecked = false;
+        var file = await st.Voice.StopAsync();
+        if (file == null) { VoiceMsg.Text = "Nothing was recorded."; return; }
+        int after = Items.SelectedItem is PlaylistRow r ? r.Index - 1 : -1;
+        var t = st.AddVoiceTrack(file, _currentId, after); Reload();
+        VoiceMsg.Text = t == null ? "Could not add the recording." : $"Added \"{t.Title}\" {(after >= 0 ? "after the selected track" : "at the end")}.";
+    }
+
     private void OnUseAutoDj(object s, RoutedEventArgs e) { if (!EditableList) return; Vm.Station.Profile.AutoDj.PlaylistId = _currentId.ToString(); Vm.Station.SaveProfile(); UpdateInfo(); }
     private void OnModes(object s, RoutedEventArgs e) { Vm.Station.Queue.Shuffle = Vm.Station.Profile.AutoDj.Shuffle; Vm.Station.Queue.Repeat = Vm.Station.Profile.AutoDj.Repeat; Vm.Station.SaveProfile(); }
     private void UpdateInfo()

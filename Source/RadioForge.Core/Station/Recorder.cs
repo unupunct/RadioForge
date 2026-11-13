@@ -51,7 +51,7 @@ public sealed partial class Recorder : ObservableObject
 {
     private readonly AudioEngine _engine; private readonly Func<StationProfile> _profile; private readonly Database _db; private readonly Func<string?> _ffmpeg;
     private BusSubscription? _sub; private Task? _task; private volatile bool _paused;
-    private long _frames; private string _path = ""; private DateTime _started; private RecordSource _src; private RecordFormat _fmt;
+    private string? _title; private long _frames; private string _path = ""; private DateTime _started; private RecordSource _src; private RecordFormat _fmt;
     [ObservableProperty] private RecorderState _state = RecorderState.Idle;
     [ObservableProperty] private TimeSpan _elapsed;
     [ObservableProperty] private long _fileSize;
@@ -69,23 +69,24 @@ public sealed partial class Recorder : ObservableObject
         RecordSource.Aux => _engine.AuxStrip.Tap, RecordSource.System => _engine.SystemStrip.Tap, _ => _engine.MasterBus
     };
 
-    public static string BuildName(string pattern, string station, RecordSource src, DateTime now)
+    public static string BuildName(string pattern, string station, RecordSource src, DateTime now, string? title = null)
     {
-        var n = pattern.Replace("{station}", station).Replace("{source}", src.ToString()).Replace("{date}", now.ToString("yyyy-MM-dd")).Replace("{time}", now.ToString("HH-mm-ss"));
+        var n = pattern.Replace("{title}", title ?? "").Replace("{station}", station).Replace("{source}", src.ToString()).Replace("{date}", now.ToString("yyyy-MM-dd")).Replace("{time}", now.ToString("HH-mm-ss"));
         foreach (var c in Path.GetInvalidFileNameChars()) n = n.Replace(c, '_');
         return n.Trim();
     }
 
     /// <summary>Returns an error message or null on success.</summary>
-    public string? Start()
+    /// <param name="title">Set for archived shows: records the master and tags the recording for the podcast feed.</param>
+    public string? Start(string? title = null)
     {
         if (State != RecorderState.Idle) return "Already recording.";
         var prof = _profile(); var rs = prof.Recording;
         var folder = string.IsNullOrWhiteSpace(rs.Folder) ? AppPaths.DefaultRecordings : rs.Folder;
         try { Directory.CreateDirectory(folder); } catch (Exception ex) { return $"Cannot use recordings folder: {ex.Message}"; }
-        _src = rs.Source; _fmt = rs.Format; _started = DateTime.Now;
+        _title = title; _src = title != null ? RecordSource.Master : rs.Source; _fmt = rs.Format; _started = DateTime.Now;
         var ext = _fmt switch { RecordFormat.Wav => "wav", RecordFormat.Mp3 => "mp3", _ => "flac" };
-        var baseName = BuildName(rs.NamePattern, prof.Name, _src, _started);
+        var baseName = BuildName(title != null ? "{title}_{date}_{time}" : rs.NamePattern, prof.Name, _src, _started, title);
         _path = Path.Combine(folder, baseName + "." + ext);
         for (int i = 2; File.Exists(_path); i++) _path = Path.Combine(folder, $"{baseName} ({i}).{ext}");
         IAudioSink sink;
@@ -134,7 +135,7 @@ public sealed partial class Recorder : ObservableObject
         long size = 0; try { size = File.Exists(_path) ? new FileInfo(_path).Length : 0; } catch { }
         Elapsed = TimeSpan.FromSeconds(dur); FileSize = size;
         if (size == 0) { Log.Warn("Recorder", "Recording was empty; discarded"); return null; }
-        var info = new RecordingInfo(0, _path, _started, dur, size, _fmt.ToString().ToUpperInvariant(), _src.ToString());
+        var info = new RecordingInfo(0, _path, _started, dur, size, _fmt.ToString().ToUpperInvariant(), _src.ToString(), _title);
         try { _db.AddRecording(info); } catch (Exception ex) { Log.Error("Recorder", "Could not save history", ex); }
         Log.Info("Recorder", $"Recording saved: {_path} ({dur:F0}s, {size / 1024} KB)");
         Completed?.Invoke(info);

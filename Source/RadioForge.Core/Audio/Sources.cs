@@ -130,8 +130,32 @@ public sealed class MusicPlayer : ISampleProvider, IDisposable
 {
     private sealed class Deck : IDisposable
     {
-        public AudioFileSource Src = null!; public string Path = ""; public long Pos;
+        public AudioFileSource Src = null!; public string Path = ""; public long Pos; public float Gain = 1f;
+        public float[]? Lead; public int LeadLen, LeadPos; public long SilentRun;
         public void Dispose() => Src.Dispose();
+
+        /// <summary>Reads from the decoder, serving any buffered lead-in first.</summary>
+        public int Read(float[] buf, int off, int count)
+        {
+            int n = 0;
+            if (Lead != null && LeadPos < LeadLen) { n = Math.Min(count, LeadLen - LeadPos); Array.Copy(Lead, LeadPos, buf, off, n); LeadPos += n; if (LeadPos >= LeadLen) Lead = null; }
+            if (n < count) n += Src.Samples.Read(buf, off + n, count - n);
+            return n;
+        }
+
+        /// <summary>Discards leading silence (below -55 dBFS, at most 4 s) so tracks start instantly. Control thread only.</summary>
+        public void SkipLeadingSilence(int rate)
+        {
+            const float thr = 0.0018f; var tmp = new float[2048]; long skipped = 0, max = rate * 4L;
+            while (skipped < max)
+            {
+                int n = Src.Samples.Read(tmp, 0, tmp.Length); if (n == 0) break;
+                int first = -1; for (int i = 0; i < n; i++) if (Math.Abs(tmp[i]) > thr) { first = i & ~1; break; }
+                if (first < 0) { skipped += n / 2; continue; }
+                Lead = new float[n - first]; Array.Copy(tmp, first, Lead, 0, n - first); LeadLen = n - first; LeadPos = 0; skipped += first / 2; break;
+            }
+            Pos += skipped;
+        }
     }
 
     private readonly object _gate = new();
@@ -147,6 +171,9 @@ public sealed class MusicPlayer : ISampleProvider, IDisposable
     public WaveFormat WaveFormat { get; }
     public PlayerState State { get; private set; } = PlayerState.Stopped;
     public Func<string?>? NextProvider { get; set; }
+    /// <summary>Per-track playback gain (loudness normalisation). Called when a file is opened, never on the audio thread.</summary>
+    public Func<string, float>? GainProvider { get; set; }
+    public Func<bool>? TrimSilence { get; set; }
     public event Action<string>? TrackStarted;
     public event Action? QueueFinished;
     public event Action<string, Exception>? TrackFailed;
@@ -164,7 +191,13 @@ public sealed class MusicPlayer : ISampleProvider, IDisposable
         _control = new Timer(_ => ControlTick(), null, 100, 50);
     }
 
-    private Deck Open(string path) => new() { Path = path, Src = new AudioFileSource(path, _rate) };
+    private Deck Open(string path)
+    {
+        float g = 1f; try { g = GainProvider?.Invoke(path) ?? 1f; } catch { }
+        var d = new Deck { Path = path, Src = new AudioFileSource(path, _rate), Gain = g };
+        if (TrimSilence?.Invoke() == true) { try { d.SkipLeadingSilence(_rate); } catch { } }
+        return d;
+    }
 
     public void Play(string path)
     {
@@ -245,11 +278,11 @@ public sealed class MusicPlayer : ISampleProvider, IDisposable
                 {
                     int n = (int)Math.Min(want, (_fadeLen - _fadePos) * 2) & ~1;
                     if (n <= 0) { Promote(); continue; }
-                    int r1 = _cur.Src.Samples.Read(_t1, 0, n), r2 = _next.Src.Samples.Read(_t2, 0, n);
+                    int r1 = _cur.Read(_t1, 0, n), r2 = _next.Read(_t2, 0, n);
                     for (int k = 0; k + 1 < n; k += 2)
                     {
                         double t = (_fadePos + k / 2) / (double)_fadeLen;
-                        float gc = (float)Math.Cos(t * Math.PI / 2), gn = (float)Math.Sin(t * Math.PI / 2);
+                        float gc = (float)Math.Cos(t * Math.PI / 2) * _cur.Gain, gn = (float)Math.Sin(t * Math.PI / 2) * _next.Gain;
                         buffer[offset + done + k] = (k < r1 ? _t1[k] * gc : 0) + (k < r2 ? _t2[k] * gn : 0);
                         buffer[offset + done + k + 1] = (k + 1 < r1 ? _t1[k + 1] * gc : 0) + (k + 1 < r2 ? _t2[k + 1] * gn : 0);
                     }
@@ -257,7 +290,14 @@ public sealed class MusicPlayer : ISampleProvider, IDisposable
                     if (_fadePos >= _fadeLen || r1 == 0) Promote();
                     continue;
                 }
-                int r = _cur.Src.Samples.Read(buffer, offset + done, want);
+                int r = _cur.Read(buffer, offset + done, want);
+                if (_cur.Gain != 1f) for (int q = 0; q < r; q++) buffer[offset + done + q] *= _cur.Gain;
+                if (_next != null && TrimSilence?.Invoke() == true && r > 0)
+                {
+                    bool silent = true; for (int q = 0; q < r; q++) if (Math.Abs(buffer[offset + done + q]) > 0.0018f * Math.Max(_cur.Gain, 0.01f)) { silent = false; break; }
+                    _cur.SilentRun = silent ? _cur.SilentRun + r / 2 : 0;
+                    if (_cur.SilentRun > _rate / 3) { done += r; Promote(); continue; } // track ended in silence → next track starts now
+                }
                 _cur.Pos += r / 2; done += r;
                 if (r < want)
                 {

@@ -113,7 +113,7 @@ public sealed class VisualizerControl : FrameworkElement
     private readonly float[] _raw = new float[Bands], _sm = new float[Bands], _l = new float[1024], _r = new float[1024];
     private readonly float[] _peak = new float[Bands];
     private readonly List<float[]> _hist = new();
-    private WriteableBitmap? _wf; private readonly uint[] _wfPix = new uint[Bands * 128];
+    private WriteableBitmap? _wf; private readonly uint[] _wfPix = Enumerable.Repeat(0xFF050514u, Bands * 64).ToArray();
     private readonly List<(double x, double y, double vx, double vy, double life, double size)> _parts = new();
     private readonly Random _rnd = new(); private double _phase; private BitmapImage? _img; private string? _imgPath;
     private bool _hooked;
@@ -277,7 +277,7 @@ public sealed class VisualizerControl : FrameworkElement
 
     private void DrawWaterfall(DrawingContext dc, Size s)
     {
-        const int rows = 128;
+        const int rows = 64;
         _wf ??= new WriteableBitmap(Bands, rows, 96, 96, PixelFormats.Bgra32, null);
         Array.Copy(_wfPix, 0, _wfPix, Bands, Bands * (rows - 1));
         for (int i = 0; i < Bands; i++)

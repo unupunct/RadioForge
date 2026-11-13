@@ -56,6 +56,12 @@ public partial class LibraryView : UserControl
     }
     private async void OnDrop(object s, DragEventArgs e) { if (e.Data.GetData(DataFormats.FileDrop) is string[] f) await Import(f); }
 
+    private async void OnAnalyze(object s, RoutedEventArgs e)
+    {
+        var prog = new Progress<string>(m => Status.Text = "Analyzing loudness… " + m);
+        try { int n = await Core.Station.Loudness.AnalyzeLibraryAsync(Vm.Station.Db, prog); Reload(); Status.Text += $" — analysed {n} track(s)"; }
+        catch (Exception ex) { Status.Text = "Analysis failed: " + ex.Message; }
+    }
     private void OnDuplicates(object s, RoutedEventArgs e) { FilterBox.SelectedItem = "Duplicates"; }
     private void OnRemoveMissing(object s, RoutedEventArgs e)
     {

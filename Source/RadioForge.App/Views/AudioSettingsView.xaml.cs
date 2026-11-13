@@ -8,7 +8,8 @@ namespace RadioForge.App.Views;
 public partial class AudioSettingsView : UserControl
 {
     private ShellViewModel Vm => (ShellViewModel)DataContext;
-    public AudioSettingsView() { InitializeComponent(); RateBox.ItemsSource = new[] { 44100, 48000 }; Loaded += (_, _) => Fill(); }
+    public AudioSettingsView() { InitializeComponent(); RateBox.ItemsSource = new[] { 44100, 48000 }; ProcBox.ItemsSource = Enum.GetValues<RadioProcessing>();
+        var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) }; t.Tick += (_, _) => { var p = Vm.Engine.Processor; ProcInfo.Text = Vm.Station.Profile.Audio.RadioProcessing == RadioProcessing.Off ? "" : $"leveler {p.AgcGainDb:+0.0;-0.0;0.0} dB · compression {p.GainReductionDb:0.0} dB"; }; Loaded += (_, _) => t.Start(); Unloaded += (_, _) => t.Stop(); Loaded += (_, _) => Fill(); }
 
     private void Fill()
     {

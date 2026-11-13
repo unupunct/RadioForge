@@ -135,14 +135,14 @@ public sealed class ScheduleEditor : Window
     private readonly ScheduledEvent _e; private readonly Core.Station.StationController _st; public bool Deleted { get; private set; }
     private readonly TextBox _title = new(), _desc = new() { AcceptsReturn = true, Height = 50 }, _time = new(), _dur = new(), _prio = new(), _ref = new();
     private readonly ComboBox _kind = new(), _src = new(), _rep = new(), _list = new(), _pad = new(); private readonly DatePicker _date = new(), _until = new();
-    private readonly CheckBox _enabled = new() { Content = "Enabled" }; private readonly CheckBox[] _days = new CheckBox[7]; private readonly TextBlock _warn = new() { Foreground = Brushes.Orange, TextWrapping = TextWrapping.Wrap, MaxWidth = 460 };
+    private readonly CheckBox _enabled = new() { Content = "Enabled" }; private readonly CheckBox _archive = new() { Content = "Record this show and list it in the podcast feed" }; private readonly CheckBox[] _days = new CheckBox[7]; private readonly TextBlock _warn = new() { Foreground = Brushes.Orange, TextWrapping = TextWrapping.Wrap, MaxWidth = 460 };
     private readonly StackPanel _srcPanel = new();
 
     public ScheduleEditor(ScheduledEvent e, Core.Station.StationController st, bool isNew)
     {
         _e = e; _st = st; Title = isNew ? "New scheduled event" : "Edit scheduled event"; SizeToContent = SizeToContent.WidthAndHeight; ResizeMode = ResizeMode.NoResize; WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = (Brush)Application.Current.FindResource("PanelBrush"); Foreground = (Brush)Application.Current.FindResource("TextBrush");
-        _title.Text = e.Title; _desc.Text = e.Description; _time.Text = e.StartTime.ToString("HH:mm"); _dur.Text = e.DurationMinutes.ToString(); _prio.Text = e.Priority.ToString(); _enabled.IsChecked = e.Enabled;
+        _title.Text = e.Title; _desc.Text = e.Description; _time.Text = e.StartTime.ToString("HH:mm"); _dur.Text = e.DurationMinutes.ToString(); _prio.Text = e.Priority.ToString(); _enabled.IsChecked = e.Enabled; _archive.IsChecked = e.Archive;
         _kind.ItemsSource = Enum.GetValues<EventKind>(); _kind.SelectedItem = e.Kind; _src.ItemsSource = Enum.GetValues<SourceKind>(); _src.SelectedItem = e.Source; _rep.ItemsSource = Enum.GetValues<RepeatMode>(); _rep.SelectedItem = e.Repeat;
         _date.SelectedDate = e.StartDate.ToDateTime(TimeOnly.MinValue); _until.SelectedDate = e.RepeatUntil?.ToDateTime(TimeOnly.MinValue);
         var pls = st.Db.GetPlaylists().Where(p => !p.IsFolder).ToList(); _list.ItemsSource = pls; _list.DisplayMemberPath = "Name"; _list.SelectedItem = pls.FirstOrDefault(p => p.Id.ToString() == e.SourceRef);
@@ -158,7 +158,7 @@ public sealed class ScheduleEditor : Window
         var grid = new Grid { Margin = new Thickness(18), Width = 560 }; grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(130) }); grid.ColumnDefinitions.Add(new ColumnDefinition());
         int r = 0; void Row(string l, UIElement el) { grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); var t = new TextBlock { Text = l, Margin = new Thickness(0, 8, 8, 0), VerticalAlignment = VerticalAlignment.Center }; Grid.SetRow(t, r); grid.Children.Add(t); Grid.SetRow(el, r); Grid.SetColumn(el, 1); if (el is FrameworkElement fe) fe.Margin = new Thickness(0, 8, 0, 0); grid.Children.Add(el); r++; }
         Row("Title", _title); Row("Description", _desc); Row("Type", _kind); Row("Start date", _date); Row("Start time (HH:mm)", _time); Row("Duration (minutes)", _dur);
-        Row("Audio source", _src); Row("", _srcPanel); Row("Repeat", _rep); Row("Weekly days", daysPanel); Row("Repeat until", _until); Row("Priority (higher wins)", _prio); Row("", _enabled);
+        Row("Audio source", _src); Row("", _srcPanel); Row("Repeat", _rep); Row("Weekly days", daysPanel); Row("Repeat until", _until); Row("Priority (higher wins)", _prio); Row("", _enabled); Row("Archive", _archive);
         var ok = new Button { Content = "Save", IsDefault = true, MinWidth = 90, Margin = new Thickness(0, 14, 8, 0) }; var cancel = new Button { Content = "Cancel", IsCancel = true, MinWidth = 90, Margin = new Thickness(0, 14, 0, 0) }; var del = new Button { Content = "Delete", Margin = new Thickness(0, 14, 24, 0), Visibility = isNew ? Visibility.Collapsed : Visibility.Visible };
         ok.Click += (_, _) => Commit(); del.Click += (_, _) => { Deleted = true; DialogResult = true; };
         var bp = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Children = { del, ok, cancel } };
@@ -175,7 +175,7 @@ public sealed class ScheduleEditor : Window
         var c = new ScheduledEvent
         {
             Id = _e.Id, Title = _title.Text.Trim().Length == 0 ? "Untitled" : _title.Text.Trim(), Description = _desc.Text, Kind = (EventKind)_kind.SelectedItem, StartDate = DateOnly.FromDateTime(_date.SelectedDate.Value), StartTime = time, DurationMinutes = dur,
-            Source = (SourceKind)_src.SelectedItem, Repeat = (RepeatMode)_rep.SelectedItem, RepeatUntil = _until.SelectedDate.HasValue ? DateOnly.FromDateTime(_until.SelectedDate.Value) : null, Priority = int.TryParse(_prio.Text, out var p) ? p : 1, Enabled = _enabled.IsChecked == true,
+            Source = (SourceKind)_src.SelectedItem, Repeat = (RepeatMode)_rep.SelectedItem, RepeatUntil = _until.SelectedDate.HasValue ? DateOnly.FromDateTime(_until.SelectedDate.Value) : null, Priority = int.TryParse(_prio.Text, out var p) ? p : 1, Enabled = _enabled.IsChecked == true, Archive = _archive.IsChecked == true,
             DaysMask = Enumerable.Range(0, 7).Where(i => _days[i].IsChecked == true).Sum(i => 1 << i)
         };
         c.SourceRef = c.Source switch { SourceKind.Playlist => (_list.SelectedItem as Playlist)?.Id.ToString() ?? "", SourceKind.AudioFile => _ref.Text.Trim(), _ => (_pad.SelectedItem as SoundPad)?.Index.ToString() ?? "" };

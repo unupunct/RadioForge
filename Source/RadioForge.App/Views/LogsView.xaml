@@ -11,7 +11,7 @@
             <Button Content="Copy" Click="OnCopy" Margin="0,0,6,0"/><Button Content="Export…" Click="OnExport" Margin="0,0,6,0"/><Button Content="Open log folder" Click="OnOpen"/>
             <TextBlock Text="Passwords and credentials are redacted before anything is logged." Style="{StaticResource Muted}" Margin="16,0,0,0" VerticalAlignment="Center"/>
         </WrapPanel>
-        <DataGrid x:Name="Grid" Grid.Row="2" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" Background="{DynamicResource PanelBrush}" FontFamily="Consolas" FontSize="12" SelectionMode="Extended">
+        <DataGrid x:Name="Grid" AutomationProperties.Name="Log entries" Grid.Row="2" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" Background="{DynamicResource PanelBrush}" FontFamily="Consolas" FontSize="12" SelectionMode="Extended">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Time" Binding="{Binding Time, StringFormat='HH:mm:ss.fff'}" Width="100"/>
                 <DataGridTextColumn Header="Level" Binding="{Binding Level}" Width="70"/>

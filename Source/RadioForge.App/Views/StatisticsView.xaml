@@ -12,7 +12,7 @@
                 </StackPanel>
             </DockPanel>
             <Border Style="{StaticResource Card}" Margin="0,0,0,10" Padding="8">
-                <DataGrid x:Name="Table" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" Background="Transparent" MaxHeight="230">
+                <DataGrid x:Name="Table" AutomationProperties.Name="Stream statistics per server" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" Background="Transparent" MaxHeight="230">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Server" Binding="{Binding Name}" Width="*"/>
                         <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="110"/>

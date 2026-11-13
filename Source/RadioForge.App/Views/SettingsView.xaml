@@ -42,6 +42,8 @@
                     <Button Content="Apply scaling" Click="OnTheme" HorizontalAlignment="Left" Margin="0,4,0,0"/>
                     <TextBlock Text="Panel arrangement: drag the dividers between panels (Servers, Playlists, Studio) and collapse the sidebar with ☰ — sizes are remembered." Style="{StaticResource Muted}" FontSize="11.5" Margin="0,6,0,0"/>
                     <Button Content="Reset panel layout" Click="OnResetLayout" HorizontalAlignment="Left" Margin="0,6,0,0"/>
+                    <CheckBox Content="Simple mode — show only On Air, Playlists, Soundboard, Servers and Settings" IsChecked="{Binding SimpleMode}" Margin="0,10,0,0"/>
+                    <Button Content="Add sample music and jingles" Click="OnSamples" HorizontalAlignment="Left" Margin="0,8,0,0" ToolTip="Creates original royalty-free demo tracks, a sample playlist and four jingles"/>
                 </StackPanel>
             </Border>
 
@@ -97,6 +99,42 @@
                     </StackPanel>
                     <CheckBox Content="Debug logging" IsChecked="{Binding DebugLogging}" Click="OnDebug" Margin="0,6,0,0"/>
                     <Button Content="Copy diagnostics to clipboard" Click="OnDiag" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <StackPanel DataContext="{Binding Settings.Alerts}">
+                    <TextBlock Text="STREAM HEALTH ALERTS" Style="{StaticResource H2}"/>
+                    <TextBlock Text="Get a Discord (or Slack-compatible) message and/or an e-mail when a server drops, fails to log in, reconnects or an audio device is lost. Repeats are limited to one per minute." Style="{StaticResource Muted}" FontSize="11.5"/>
+                    <CheckBox Content="Send alerts" IsChecked="{Binding Enabled}" Margin="0,8,0,4"/>
+                    <WrapPanel>
+                        <CheckBox Content="Server disconnected" IsChecked="{Binding OnDisconnect}" Width="200"/><CheckBox Content="Authentication failure" IsChecked="{Binding OnAuthFailure}" Width="200"/>
+                        <CheckBox Content="Server reconnected" IsChecked="{Binding OnReconnect}" Width="200"/><CheckBox Content="Audio device problem" IsChecked="{Binding OnDevice}" Width="200"/>
+                    </WrapPanel>
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
+                        <TextBlock Text="Webhook URL" VerticalAlignment="Center"/><PasswordBox x:Name="WebhookBox" Grid.Column="1" Grid.ColumnSpan="4" Margin="0,3" PasswordChanged="OnAlertSecret" ToolTip="Discord channel → Integrations → Webhooks → Copy URL. Stored encrypted."/>
+                        <TextBlock Grid.Row="1" Text="SMTP server" VerticalAlignment="Center"/><TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SmtpHost}" Margin="0,3"/>
+                        <TextBlock Grid.Row="1" Grid.Column="3" Text="Port / SSL" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Row="1" Grid.Column="4" Orientation="Horizontal"><TextBox Text="{Binding SmtpPort, UpdateSourceTrigger=LostFocus}" Width="70" Margin="0,3,10,3"/><CheckBox Content="SSL/TLS" IsChecked="{Binding SmtpSsl}"/></StackPanel>
+                        <TextBlock Grid.Row="2" Text="User name" VerticalAlignment="Center"/><TextBox Grid.Row="2" Grid.Column="1" Text="{Binding SmtpUser}" Margin="0,3"/>
+                        <TextBlock Grid.Row="2" Grid.Column="3" Text="Password" VerticalAlignment="Center"/><PasswordBox x:Name="SmtpPwBox" Grid.Row="2" Grid.Column="4" Margin="0,3" PasswordChanged="OnAlertSecret"/>
+                        <TextBlock Grid.Row="3" Text="From" VerticalAlignment="Center"/><TextBox Grid.Row="3" Grid.Column="1" Text="{Binding MailFrom}" Margin="0,3"/>
+                        <TextBlock Grid.Row="3" Grid.Column="3" Text="To" VerticalAlignment="Center"/><TextBox Grid.Row="3" Grid.Column="4" Text="{Binding MailTo}" Margin="0,3"/>
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0"><Button Content="Send test alert" Click="OnAlertTest"/><TextBlock x:Name="AlertMsg" Style="{StaticResource Muted}" Margin="12,0,0,0" VerticalAlignment="Center"/></StackPanel>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <StackPanel DataContext="{Binding Settings}">
+                    <TextBlock Text="NOW-PLAYING WEB PAGE" Style="{StaticResource H2}"/>
+                    <TextBlock Text="A small page for phones and websites showing what is on air (also /nowplaying.json). Off by default." Style="{StaticResource Muted}" FontSize="11.5"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <CheckBox Content="Enable" IsChecked="{Binding WebEnabled}" Click="OnWeb" Margin="0,0,16,0"/>
+                        <TextBlock Text="Port" VerticalAlignment="Center" Margin="0,0,6,0"/><TextBox Text="{Binding WebPort, UpdateSourceTrigger=LostFocus}" Width="70" LostFocus="OnWeb" Margin="0,0,16,0"/>
+                        <CheckBox Content="Allow other devices on my network" IsChecked="{Binding WebAllowLan}" Click="OnWeb"/>
+                    </StackPanel>
+                    <TextBlock x:Name="WebInfo" Style="{StaticResource Muted}" Margin="0,6,0,0"/>
                 </StackPanel>
             </Border>
             <TextBlock x:Name="AboutText" Style="{StaticResource Muted}" Margin="0,0,0,20"/>

@@ -33,6 +33,26 @@
                     <Button Content="Apply sample rate / latency (restarts the station engine)" Click="OnRestartEngine" Margin="0,8,0,0" HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <StackPanel DataContext="{Binding Station.Profile.Audio}">
+                    <TextBlock Text="RADIO SOUND — same volume, clean sound" Style="{StaticResource H2}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="Processing" Width="170" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="ProcBox" SelectedItem="{Binding RadioProcessing}" Width="160" AutomationProperties.Name="Radio sound processing preset"/>
+                        <TextBlock x:Name="ProcInfo" Style="{StaticResource Muted}" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Muted}" FontSize="11.5" TextWrapping="Wrap" Text="Off — untouched.  Gentle — light levelling.  Radio — rumble filter, automatic gain control (every track lands at the same level, ±12 dB) and a 3-band compressor for a dense, even, clean sound.  Loud — stronger, for noisy listening places. Works on the whole program, so the stream, the speakers and recordings all get it; the master limiter still protects against clipping."/>
+                    <CheckBox Content="Trim silence between tracks (skip silent intros, hand over early after silent endings)" IsChecked="{Binding TrimSilence}" Margin="0,8,0,0"/>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <StackPanel DataContext="{Binding Station.Profile.Audio}">
+                    <TextBlock Text="LOUDNESS NORMALISATION" Style="{StaticResource H2}"/>
+                    <CheckBox Content="Play every track at the same loudness (EBU R128 / ITU BS.1770 LUFS)" IsChecked="{Binding NormalizeLoudness}"/>
+                    <c:LabeledSlider Label="Target" LabelWidth="170" Minimum="-24" Maximum="-8" Step="0.5" Value="{Binding TargetLufs, Mode=TwoWay}" Unit="LUFS" Format="0.0"/>
+                    <TextBlock Text="Tracks are measured once (Audio Library → Analyze loudness, or automatically the first time they play) and gain-matched up to ±12 dB; the master limiter prevents clipping. Streaming loudness of -16 LUFS is a common target." Style="{StaticResource Muted}" FontSize="11.5"/>
+                </StackPanel>
+            </Border>
             <Border Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="CHANNEL ROUTING" Style="{StaticResource H2}"/>

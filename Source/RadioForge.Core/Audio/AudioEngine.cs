@@ -84,8 +84,12 @@ public sealed class AudioEngine : ISampleProvider, IDisposable
     public LevelMeter MasterMeter { get; }
     public LevelMeter InputMeter { get; }
     public AudioBus MasterBus { get; }
+    /// <summary>Processed microphone for private recording (voice tracks); never goes on air.</summary>
+    public AudioBus VoiceBus { get; }
+    public volatile bool MicPrivate;
     public SpectrumAnalyzer Analyzer { get; }
     public Limiter Limiter { get; } = new();
+    public BroadcastProcessor Processor { get; private set; } = null!;
     public bool IsRunning { get; private set; }
     public bool UsingDevice { get; private set; }
     public string OutputDeviceName { get; private set; } = "(none)";
@@ -112,8 +116,8 @@ public sealed class AudioEngine : ISampleProvider, IDisposable
     {
         Settings = settings; Rate = settings.SampleRate;
         WaveFormat = WaveFormat.CreateIeeeFloatWaveFormat(Rate, 2);
-        _limiter = Limiter;
-        Music = new MusicPlayer(Rate, () => Settings.CrossfadeSec);
+        _limiter = Limiter; Processor = new BroadcastProcessor(Rate);
+        Music = new MusicPlayer(Rate, () => Settings.CrossfadeSec) { TrimSilence = () => Settings.TrimSilence };
         Sfx = new SfxChannel(Rate);
         MicCapture = new CaptureSource("Microphone", settings.Mic.DeviceId, false, Rate);
         AuxCapture = new CaptureSource("Aux", settings.AuxDeviceId, false, Rate);
@@ -126,7 +130,7 @@ public sealed class AudioEngine : ISampleProvider, IDisposable
         SystemStrip = new ChannelStrip(ChannelId.System, "System", SystemCapture, Rate) { Volume = settings.SystemVolume };
         Strips = new[] { MusicStrip, MicStrip, SfxStrip, AuxStrip, SystemStrip };
         MasterMeter = new LevelMeter(Rate); InputMeter = new LevelMeter(Rate);
-        MasterBus = new AudioBus(Rate); Analyzer = new SpectrumAnalyzer(Rate);
+        MasterBus = new AudioBus(Rate); VoiceBus = new AudioBus(Rate); Analyzer = new SpectrumAnalyzer(Rate);
         foreach (var c in new[] { MicCapture, AuxCapture, SystemCapture }) c.Stopped += OnCaptureStopped;
         _watcher = new DeviceWatcher();
         _watcher.DeviceStateChanged += OnDeviceState;
@@ -314,6 +318,7 @@ public sealed class AudioEngine : ISampleProvider, IDisposable
             if (!enabled) { s.Meter.Process(master, 0, 0); continue; }
             int n = s.Source.Read(tmp, 0, count);
             if (n < count) Array.Clear(tmp, n, count - n);
+            if (s == MicStrip && MicPrivate) { VoiceBus.Publish(tmp, 0, count); s.Meter.Process(tmp, 0, count); InputMeter.Process(tmp, 0, count); continue; }
 
             // update duck gain right after the mic has been processed (mic is strip #2 but we need it before music → handled below)
             float target = s.Mute ? 0f : (float)s.Volume;
@@ -336,6 +341,7 @@ public sealed class AudioEngine : ISampleProvider, IDisposable
         float bal = (float)Settings.Balance;
         _balL = bal > 0 ? 1 - bal : 1; _balR = bal < 0 ? 1 + bal : 1;
         for (int i = 0; i + 1 < count; i += 2) { master[i] *= mv * _balL; master[i + 1] *= mv * _balR; }
+        Processor.Process(master, 0, count, Settings.RadioProcessing);
         if (Settings.LimiterEnabled) _limiter.Process(master, 0, count, Db.ToLinear(Settings.LimiterCeilingDb), Rate);
         else for (int i = 0; i < count; i++) master[i] = Math.Clamp(master[i], -1.5f, 1.5f);
         MasterMeter.Process(master, 0, count);
@@ -351,7 +357,7 @@ public sealed class AudioEngine : ISampleProvider, IDisposable
     private void UpdateDuck(int frames)
     {
         var m = Settings.Mic;
-        bool speaking = m.DuckingEnabled && Mic.Open && Db.ToDb(Mic.Level) > m.DuckThresholdDb;
+        bool speaking = m.DuckingEnabled && !MicPrivate && Mic.Open && Db.ToDb(Mic.Level) > m.DuckThresholdDb;
         float target = speaking ? Db.ToLinear(-m.DuckAmountDb) : 1f;
         double ms = target < _duckGain ? m.DuckAttackMs : m.DuckReleaseMs;
         float coef = (float)(1 - Math.Exp(-frames / (Rate * Math.Max(ms, 1) / 1000.0)));

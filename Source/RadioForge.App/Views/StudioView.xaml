@@ -49,6 +49,7 @@
                         </Grid>
                         <StackPanel Grid.Row="2" Margin="0,8,0,0">
                             <c:LabeledSlider Label="Balance" Minimum="-1" Maximum="1" Value="{Binding Station.Profile.Audio.Balance, Mode=TwoWay}" LabelWidth="56" Format="+0.00;-0.00;0.00"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0"><TextBlock Text="Radio sound" VerticalAlignment="Center" Margin="0,0,8,0"/><ComboBox x:Name="RadioBox" SelectedItem="{Binding Station.Profile.Audio.RadioProcessing}" Width="110" AutomationProperties.Name="Radio sound processing preset"/></StackPanel>
                             <CheckBox Content="Master limiter" IsChecked="{Binding Station.Profile.Audio.LimiterEnabled}" Margin="0,4,0,0"/>
                             <c:LabeledSlider Label="Ceiling" Minimum="-12" Maximum="0" Value="{Binding Station.Profile.Audio.LimiterCeilingDb, Mode=TwoWay}" LabelWidth="56" Unit="dB" Format="0.0"/>
                             <CheckBox Content="Output to speakers" IsChecked="{Binding Station.Profile.Audio.SpeakersEnabled}" ToolTip="Routing: the program always goes to the stream; this only controls local monitoring."/>

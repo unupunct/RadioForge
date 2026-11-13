@@ -36,8 +36,28 @@ public partial class SettingsView : UserControl
         TzBox.ItemsSource = TimeZoneInfo.GetSystemTimeZones();
         foreach (var c in new[] { "#00E5A0", "#00B8FF", "#FF3DCB", "#FFD23F", "#FF6B3D", "#9B7BFF" })
         { var b = new Button { Width = 22, Height = 22, Margin = new Thickness(0, 0, 4, 0), Background = new System.Windows.Media.SolidColorBrush(Palette.Parse(c, System.Windows.Media.Colors.Gray)) }; b.Click += (_, _) => { App.Settings.AccentColor = c; ThemeManager.Apply(App.Settings); }; Swatches.Children.Add(b); }
-        Loaded += (_, _) => { LoadProfiles(); BuildShortcuts(); ApplyHotkeys(); LogsPath.Text = AppPaths.Logs; UpdateFfmpeg(); AboutText.Text = $"RadioForge {typeof(App).Assembly.GetName().Version?.ToString(3)} · .NET {Environment.Version} · NAudio / LAME (LGPL) · data folder: {AppPaths.Root}"; };
+        Loaded += (_, _) => { InitNew(); LoadProfiles(); BuildShortcuts(); ApplyHotkeys(); LogsPath.Text = AppPaths.Logs; UpdateFfmpeg(); AboutText.Text = $"RadioForge {typeof(App).Assembly.GetName().Version?.ToString(3)} · .NET {Environment.Version} · NAudio / LAME (LGPL) · data folder: {AppPaths.Root}"; };
     }
+
+    private void InitNew()
+    {
+        _loadingSecrets = true; WebhookBox.Password = App.Settings.Alerts.WebhookUrl; SmtpPwBox.Password = App.Settings.Alerts.SmtpPassword; _loadingSecrets = false; UpdateWebInfo();
+    }
+    private bool _loadingSecrets;
+    private void OnAlertSecret(object s, RoutedEventArgs e)
+    {
+        if (_loadingSecrets) return; App.Settings.Alerts.WebhookUrl = WebhookBox.Password; App.Settings.Alerts.SmtpPassword = SmtpPwBox.Password; ProfileStore.SaveSettings(App.Settings);
+    }
+    private async void OnAlertTest(object s, RoutedEventArgs e) { AlertMsg.Text = "Sending…"; AlertMsg.Text = await Vm.Station.Alerts.SendAsync("RadioForge test alert", "This is a test alert from " + Vm.Station.Profile.Name + "."); }
+    private void OnWeb(object s, RoutedEventArgs e) { if (!IsLoaded) return; ProfileStore.SaveSettings(App.Settings); Vm.Station.ApplyWebSettings(); UpdateWebInfo(); }
+    private void UpdateWebInfo()
+    {
+        var a = App.Settings; if (!a.WebEnabled) { WebInfo.Text = "Not running."; return; }
+        var urls = new List<string> { $"http://localhost:{Vm.Station.Web.Port}/" };
+        if (a.WebAllowLan) foreach (var ip in System.Net.Dns.GetHostAddresses(System.Net.Dns.GetHostName()).Where(i => i.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)) urls.Add($"http://{ip}:{Vm.Station.Web.Port}/");
+        WebInfo.Text = "Running at " + string.Join("  ·  ", urls) + (a.WebAllowLan ? "\nAnyone on your network can see what is playing; Windows may ask to allow network access." : "");
+    }
+    private void OnSamples(object s, RoutedEventArgs e) { var made = Core.Station.SampleContent.Create(Vm.Station); BackupMsg.Text = made ? "Sample music, a sample playlist and four jingles were added." : "Sample content is already present."; Vm.RefreshLibraryState(); }
 
     private void OnResetLayout(object s, RoutedEventArgs e) { LayoutPersist.Reset(); Vm.ShowNavText = true; MessageBox.Show("Panel sizes were reset. They return to the defaults the next time you open each page after restarting RadioForge."); }
     private void OnTheme(object s, RoutedEventArgs e) { if (!IsLoaded) return; ThemeManager.Apply(App.Settings); foreach (Window w in Application.Current.Windows) w.FontSize = 13 * App.Settings.FontScale; ProfileStore.SaveSettings(App.Settings); }

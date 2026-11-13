@@ -17,7 +17,7 @@ public partial class SetupWizard : Window
         _p = p; InitializeComponent();
         NameBox.Text = p.Name; Desc.Text = p.Description; Genre.Text = p.Genre; Web.Text = p.Website; Logo.Text = p.LogoPath;
         Country.ItemsSource = CultureInfo.GetCultures(CultureTypes.SpecificCultures).Select(c => { try { return new RegionInfo(c.Name).EnglishName; } catch { return null; } }).Where(x => x != null).Distinct().OrderBy(x => x).ToList();
-        Country.Text = p.Country; Tz.ItemsSource = TimeZoneInfo.GetSystemTimeZones(); Tz.SelectedValue = p.TimeZoneId;
+        Country.Text = string.IsNullOrWhiteSpace(p.Country) ? System.Globalization.RegionInfo.CurrentRegion.EnglishName : p.Country; Tz.ItemsSource = TimeZoneInfo.GetSystemTimeZones(); Tz.SelectedValue = p.TimeZoneId;
         RbIce.Checked += (_, _) => UpdateServerHelp(); RbSc.Checked += (_, _) => UpdateServerHelp(); UpdateServerHelp();
         SkipServer.Checked += (_, _) => ServerGrid.IsEnabled = false; SkipServer.Unchecked += (_, _) => ServerGrid.IsEnabled = true;
         var ex = p.Servers.FirstOrDefault(); if (ex != null) { Host.Text = ex.Host; Port.Text = ex.Port.ToString(); Mount.Text = ex.Mount; Pw.Password = ex.Password; (ex.Type == ServerType.Icecast2 ? RbIce : RbSc).IsChecked = true; }
@@ -94,7 +94,7 @@ public partial class SetupWizard : Window
         Summary.Text = $"Station:  {NameBox.Text}\nGenre:  {(Genre.Text == "" ? "—" : Genre.Text)}\nServer:  {(sp == null ? "none yet (add one under Streaming Servers)" : sp.Describe())}\nMicrophone:  {(MicBox.SelectedItem as DeviceInfo)?.Name}\nSpeakers:  {(OutBox.SelectedItem as DeviceInfo)?.Name}\n\nYour music library is empty — add songs under Audio Library or Playlist Manager. Auto DJ plays them automatically once you are on air.";
     }
 
-    private void OnFinish(object s, RoutedEventArgs e) { Commit(); GoOnAir = _p.Servers.Count > 0; App.AutoStartBroadcast = GoOnAir; DialogResult = true; }
-    private void OnSaveOnly(object s, RoutedEventArgs e) { Commit(); DialogResult = true; }
+    private void OnFinish(object s, RoutedEventArgs e) { Commit(); App.AddSamplesOnStart = SampleBox.IsChecked == true; GoOnAir = _p.Servers.Count > 0; App.AutoStartBroadcast = GoOnAir; DialogResult = true; }
+    private void OnSaveOnly(object s, RoutedEventArgs e) { Commit(); App.AddSamplesOnStart = SampleBox.IsChecked == true; DialogResult = true; }
     private void OnSkip(object s, RoutedEventArgs e) { _p.Name = NameBox.Text.Trim().Length > 0 ? NameBox.Text.Trim() : _p.Name; _p.SetupCompleted = true; DialogResult = true; }
 }

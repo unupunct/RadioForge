@@ -12,12 +12,13 @@
             <Button Content="Find duplicates" Click="OnDuplicates" Margin="0,0,6,0"/>
             <Button Content="Remove missing" Click="OnRemoveMissing" Margin="0,0,6,0"/>
             <Button Content="Remove selected" Click="OnRemoveSelected" Margin="0,0,6,0"/>
+            <Button Content="Analyze loudness" Click="OnAnalyze" ToolTip="Measure LUFS for tracks that have no value yet (used by loudness normalisation)" Margin="0,0,6,0"/>
             <Button Content="▶ Play selected" Click="OnPlay" Style="{StaticResource AccentButton}" Margin="0,0,6,0"/>
             <TextBlock x:Name="Status" VerticalAlignment="Center" Style="{StaticResource Muted}" Margin="10,0,0,0"/>
         </WrapPanel>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <DataGrid x:Name="Grid" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended" CanUserSortColumns="True" GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+            <DataGrid x:Name="Grid" AutomationProperties.Name="Audio library tracks" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended" CanUserSortColumns="True" GridLinesVisibility="Horizontal" HeadersVisibility="Column"
                       Background="{DynamicResource PanelBrush}" SelectionChanged="OnSelect" MouseDoubleClick="OnPlay">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="2*"/>
@@ -25,6 +26,7 @@
                     <DataGridTextColumn Header="Album" Binding="{Binding Album}" Width="*"/>
                     <DataGridTextColumn Header="Genre" Binding="{Binding Genre}" Width="100"/>
                     <DataGridTextColumn Header="Time" Binding="{Binding DurationText}" SortMemberPath="DurationSec" Width="70"/>
+                    <DataGridTextColumn Header="Loudness" Binding="{Binding LufsText}" SortMemberPath="Lufs" Width="90"/>
                     <DataGridTextColumn Header="File" Binding="{Binding Path}" Width="2*"/>
                 </DataGrid.Columns>
                 <DataGrid.RowStyle>

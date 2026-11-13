@@ -112,6 +112,11 @@ public partial class AudioSettings : ObservableObject
     [ObservableProperty] private double _auxVolume = 0.7;
     [ObservableProperty] private double _systemVolume = 0.7;
     [ObservableProperty] private double _crossfadeSec = 3;
+    [ObservableProperty] private Audio.RadioProcessing _radioProcessing = Audio.RadioProcessing.Off;
+    /// <summary>Skip silence at the start of tracks and hand over early when a track ends in silence (gap-free transitions).</summary>
+    [ObservableProperty] private bool _trimSilence = true;
+    [ObservableProperty] private bool _normalizeLoudness = false;
+    [ObservableProperty] private double _targetLufs = -16;
     [ObservableProperty] private bool _systemAudioEnabled = false;
     [ObservableProperty] private bool _auxEnabled = false;
     public MicSettings Mic { get; set; } = new();
@@ -127,6 +132,8 @@ public partial class RecordingSettings : ObservableObject
     [ObservableProperty] private RecordSource _source = RecordSource.Master;
     [ObservableProperty] private int _mp3Kbps = 192;
     [ObservableProperty] private string _namePattern = "{station}_{source}_{date}_{time}";
+    /// <summary>Public base URL where the recordings folder is published (enables podcast.xml for archived shows).</summary>
+    [ObservableProperty] private string _podcastBaseUrl = "";
 }
 
 public enum PadMode { PlayOnce, Loop, PlayOverMusic, ReplaceMusic, PlayAfterCurrentTrack }
@@ -227,6 +234,11 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _notifyClipping = true;
     [ObservableProperty] private bool _notifyDevice = true;
     [ObservableProperty] private int _statsSampleSec = 5;
+    [ObservableProperty] private bool _simpleMode;
+    [ObservableProperty] private bool _webEnabled;
+    [ObservableProperty] private int _webPort = 8765;
+    [ObservableProperty] private bool _webAllowLan;
+    public Station.AlertSettings Alerts { get; set; } = new();
     [ObservableProperty] private int _visPreset = 0;
     [ObservableProperty] private double _visSensitivity = 1.0;
     [ObservableProperty] private string _visColorA = "";
@@ -258,11 +270,14 @@ public class Track
     public string Genre { get; set; } = "";
     public uint Year { get; set; }
     public double DurationSec { get; set; }
+    /// <summary>Integrated loudness (BS.1770) once analysed; -70 = silent.</summary>
+    public double? Lufs { get; set; }
     public long FileSize { get; set; }
     public DateTime Added { get; set; } = DateTime.Now;
     public bool Missing { get; set; }
     public TimeSpan Duration => TimeSpan.FromSeconds(DurationSec);
     public string DisplayName => string.IsNullOrWhiteSpace(Artist) ? Title : $"{Artist} — {Title}";
+    public string LufsText => Lufs is null ? "" : Lufs <= -69 ? "silent" : $"{Lufs:0.0} LUFS";
     public string DurationText => Duration.TotalHours >= 1 ? Duration.ToString(@"h\:mm\:ss") : Duration.ToString(@"m\:ss");
 }
 

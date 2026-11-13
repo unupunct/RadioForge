@@ -62,6 +62,8 @@ public sealed class NotificationHub
 {
     private readonly AppSettings _s;
     public event Action<NotificationItem>? Raised;
+    /// <summary>Raised for every notification regardless of the user's toast preferences (used by alert delivery).</summary>
+    public event Action<NotificationItem>? Notified;
     public ObservableCollection<NotificationItem> History { get; } = new();
     public NotificationHub(AppSettings s) { _s = s; }
     public void Notify(NotifyKind kind, string title, string message)
@@ -74,6 +76,7 @@ public sealed class NotificationHub
         };
         var n = new NotificationItem(DateTime.Now, kind, title, Redactor.Redact(message));
         Log.Info("Notify", $"{title}: {n.Message}");
+        try { Notified?.Invoke(n); } catch { }
         if (enabled) try { Raised?.Invoke(n); } catch { }
     }
 }
@@ -248,6 +251,10 @@ public sealed partial class StationController : ObservableObject, IDisposable
     public PlaybackQueue Queue { get; } = new();
     public NotificationHub Notifications { get; }
     public StatsService Stats { get; }
+    public AlertService Alerts { get; }
+    public NowPlayingServer Web { get; }
+    public VoiceTrackRecorder Voice { get; }
+    private bool _archiving;
     public ObservableCollection<ScheduledEvent> Events { get; } = new();
     public string? FfmpegPath => Ffmpeg.Locate(Settings.FfmpegPath);
 
@@ -274,6 +281,9 @@ public sealed partial class StationController : ObservableObject, IDisposable
         Streams = new StreamManager(Engine, () => FfmpegPath);
         Recorder = new Recorder(Engine, () => Profile, Db, () => FfmpegPath);
         Stats = new StatsService(Streams, Db, settings);
+        Alerts = new AlertService(Notifications, settings, () => Profile.Name);
+        Web = new NowPlayingServer(this);
+        Voice = new VoiceTrackRecorder(Engine);
         foreach (var s in profile.Servers) AddDestination(s);
         foreach (var e in Db.GetEvents()) Events.Add(e);
         Queue.Repeat = profile.AutoDj.Repeat; Queue.Shuffle = profile.AutoDj.Shuffle;
@@ -286,20 +296,31 @@ public sealed partial class StationController : ObservableObject, IDisposable
         profile.Audio.Mic.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MicSettings.Muted)) Engine.MicStrip.Mute = profile.Audio.Mic.Muted; };
 
         Engine.Music.NextProvider = NextPath;
+        Engine.Music.GainProvider = path =>
+        {
+            if (!Profile.Audio.NormalizeLoudness) return 1f;
+            var t = Db.GetTrackByPath(path); if (t == null) return 1f;
+            if (t.Lufs == null) { try { var v = Loudness.MeasureLufs(path); if (v.HasValue) { Db.SetLufs(t.Id, v.Value); return Loudness.GainFor(v, Profile.Audio.TargetLufs); } } catch { } return 1f; }
+            return t.Lufs <= -69 ? 1f : Loudness.GainFor(t.Lufs, Profile.Audio.TargetLufs);
+        };
         Engine.Music.TrackStarted += OnTrackStarted;
         Engine.Music.QueueFinished += OnQueueFinished;
         Engine.Music.TrackFailed += (p, ex) => Notifications.Notify(NotifyKind.MissingFile, "Audio file problem", $"{Path.GetFileName(p)} could not be played: {ex.Message}");
         Engine.DeviceProblem += m => Notifications.Notify(NotifyKind.DeviceProblem, "Audio device", m);
         Engine.Recovered += () => Notifications.Notify(NotifyKind.Info, "Audio engine", "Audio devices recovered.");
         Streams.StateTransition += OnStreamTransition;
-        Recorder.Completed += r => Notifications.Notify(NotifyKind.RecordingCompleted, "Recording completed", $"{Path.GetFileName(r.Path)} ({TimeSpan.FromSeconds(r.DurationSec):hh\\:mm\\:ss})");
+        Recorder.Completed += r =>
+        {
+            Notifications.Notify(NotifyKind.RecordingCompleted, "Recording completed", $"{Path.GetFileName(r.Path)} ({TimeSpan.FromSeconds(r.DurationSec):hh\\:mm\\:ss})");
+            if (!string.IsNullOrEmpty(r.Title)) try { PodcastFeed.Write(Profile, Db.GetRecordings(), Path.GetDirectoryName(r.Path)!); } catch (Exception ex) { Log.Error("Podcast", "Feed failed", ex); }
+        };
         Recorder.Failed += m => Notifications.Notify(NotifyKind.DeviceProblem, "Recording", m);
 
         Scheduler = new ScheduleRunner(() => Events.ToList(), () => TimeZoneInfo.ConvertTime(DateTime.UtcNow, Profile.TimeZone));
         Scheduler.Started += OnScheduleStarted; Scheduler.Ended += OnScheduleEnded;
 
         Engine.Start(useAudioDevices);
-        Scheduler.Start();
+        Scheduler.Start(); ApplyWebSettings();
         _housekeeping = new Timer(_ => Housekeeping(), null, 2000, 2000);
         Log.Info("Station", $"Station \"{profile.Name}\" opened ({profile.Servers.Count} servers, {Events.Count} scheduled events)");
     }
@@ -507,17 +528,42 @@ public sealed partial class StationController : ObservableObject, IDisposable
             default: Log.Warn("Scheduler", $"\"{e.Title}\" has no valid audio source"); break;
         }
         if (!e.IsMomentary) { Profile.Metadata.ProgramName = e.Title; }
+        if (e.Archive && !e.IsMomentary && Recorder.State == RecorderState.Idle)
+        {
+            var err = Recorder.Start(e.Title); _archiving = err == null;
+            if (err != null) Notifications.Notify(NotifyKind.DeviceProblem, "Show archive", "Could not record \"" + e.Title + "\": " + err);
+        }
     }
 
     private void OnScheduleEnded(Occurrence o)
     {
         Log.Info("Scheduler", $"Ended \"{o.Event.Title}\"");
+        if (_archiving && o.Event.Archive) { _archiving = false; _ = Recorder.StopAsync(); }
         if (Profile.Metadata.ProgramName == o.Event.Title) Profile.Metadata.ProgramName = "";
         if (o.Event.Source == SourceKind.Playlist && Scheduler.ActiveOccurrence == null && Profile.AutoDj.Enabled)
         {   // transition back to the Auto DJ playlist after the current track finishes
             var paths = AutoDjPaths().ToList();
             if (paths.Count > 0) Queue.Load(paths, Profile.AutoDj.Shuffle);
         }
+    }
+
+    // ---------------------------------------------------------------- voice tracks, web page
+    /// <summary>Adds a recorded voice link to the library and inserts it into a playlist (after <paramref name="afterIndex"/>, or at the end).</summary>
+    public Track? AddVoiceTrack(string path, long playlistId, int afterIndex = -1)
+    {
+        try { using var tf = TagLib.File.Create(path); tf.Tag.Title = "Voice link " + DateTime.Now.ToString("HH:mm"); tf.Tag.Performers = new[] { Profile.Metadata.DjName.Length > 0 ? Profile.Metadata.DjName : "Voice track" }; tf.Save(); } catch { }
+        var t = Db.ImportFile(path); if (t == null) return null;
+        var ids = Db.GetPlaylistTracks(playlistId).Select(x => x.Id).ToList();
+        int at = afterIndex < 0 || afterIndex >= ids.Count ? ids.Count : afterIndex + 1; ids.Insert(at, t.Id);
+        Db.SavePlaylistTracks(playlistId, ids); return t;
+    }
+
+    public string VoiceFolder => AppPaths.Dir(Path.Combine(AppPaths.ProfileDir(Profile.Id), "voice"));
+
+    public void ApplyWebSettings()
+    {
+        try { if (Settings.WebEnabled) Web.Start(Settings.WebPort, Settings.WebAllowLan); else Web.Stop(); }
+        catch (Exception ex) { Log.Error("Web", "Cannot start the now-playing page", ex); Notifications.Notify(NotifyKind.Info, "Now-playing page", "Could not listen on port " + Settings.WebPort + ": " + ex.Message); }
     }
 
     // ---------------------------------------------------------------- housekeeping
@@ -540,7 +586,7 @@ public sealed partial class StationController : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        _housekeeping.Dispose(); Scheduler.Dispose(); Stats.Dispose();
+        _housekeeping.Dispose(); Scheduler.Dispose(); Stats.Dispose(); Alerts.Dispose(); Web.Dispose();
         try { if (Recorder.State != RecorderState.Idle) Recorder.StopAsync().Wait(8000); } catch { }
         try { Streams.Dispose(); } catch { }
         Engine.Dispose();

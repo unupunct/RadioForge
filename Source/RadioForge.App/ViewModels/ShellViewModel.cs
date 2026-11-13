@@ -10,7 +10,7 @@ using RadioForge.Core.Streaming;
 
 namespace RadioForge.App.ViewModels;
 
-public enum PageId { Dashboard, Studio, Playlists, Soundboard, Servers, Scheduler, Library, Recordings, AudioSettings, Statistics, Logs, Settings }
+public enum PageId { Dashboard, OnAir, Studio, Playlists, Soundboard, Servers, Scheduler, Library, Recordings, AudioSettings, Statistics, Logs, Settings }
 public sealed record NavItem(PageId Page, string Icon, string Title);
 
 public sealed partial class ShellViewModel : ObservableObject
@@ -20,13 +20,22 @@ public sealed partial class ShellViewModel : ObservableObject
     public AudioEngine Engine => Station.Engine;
     public static IReadOnlyList<NavItem> NavItems { get; } = new NavItem[]
     {
-        new(PageId.Dashboard, "⌂", "Dashboard"), new(PageId.Studio, "🎚", "Studio"), new(PageId.Playlists, "♫", "Playlist Manager"),
+        new(PageId.Dashboard, "⌂", "Dashboard"), new(PageId.OnAir, "📻", "On Air (simple)"), new(PageId.Studio, "🎚", "Studio"), new(PageId.Playlists, "♫", "Playlist Manager"),
         new(PageId.Soundboard, "▦", "Soundboard"), new(PageId.Servers, "📡", "Streaming Servers"), new(PageId.Scheduler, "📅", "Broadcast Scheduler"),
         new(PageId.Library, "📚", "Audio Library"), new(PageId.Recordings, "⏺", "Recordings"), new(PageId.AudioSettings, "🎧", "Audio Settings"),
         new(PageId.Statistics, "📈", "Statistics"), new(PageId.Logs, "📜", "Logs"), new(PageId.Settings, "⚙", "Application Settings"),
     };
 
     [ObservableProperty] private NavItem _selectedNav = NavItems[0];
+    [ObservableProperty] private IReadOnlyList<NavItem> _visibleNav = NavItems;
+    [ObservableProperty] private string _setupHint = "";
+    private static readonly PageId[] SimplePages = { PageId.OnAir, PageId.Playlists, PageId.Soundboard, PageId.Servers, PageId.Settings };
+
+    public void UpdateNav()
+    {
+        VisibleNav = Settings.SimpleMode ? NavItems.Where(n => SimplePages.Contains(n.Page)).ToList() : NavItems;
+        if (!VisibleNav.Contains(SelectedNav)) SelectedNav = Settings.SimpleMode ? NavItems.First(n => n.Page == PageId.OnAir) : NavItems[0];
+    }
     [ObservableProperty] private string _clock = "";
     [ObservableProperty] private string _stationName = "";
     [ObservableProperty] private bool _isOnAir;
@@ -61,6 +70,8 @@ public sealed partial class ShellViewModel : ObservableObject
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private TimeSpan _lastCpu; private DateTime _lastCpuAt = DateTime.UtcNow;
     private string _artPath = "";
+    private bool _libraryEmpty;
+    public void RefreshLibraryState() => _libraryEmpty = Station.Db.GetTracks().Count == 0;
     public event Action<PageId>? NavigateRequested;
     public event Action<string, string>? Balloon;
 
@@ -69,6 +80,9 @@ public sealed partial class ShellViewModel : ObservableObject
         Station = station; StationName = station.Profile.Name;
         _showNavText = !station.Settings.Layout.TryGetValue("nav.expanded", out var navx) || navx > 0;
         station.Notifications.Raised += n => Application.Current.Dispatcher.BeginInvoke(() => { Toast = $"{n.Title}: {n.Message}"; Balloon?.Invoke(n.Title, n.Message); });
+        station.Settings.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(AppSettings.SimpleMode)) UpdateNav(); };
+        UpdateNav();
+        RefreshLibraryState(); var libTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) }; libTimer.Tick += (_, _) => RefreshLibraryState(); libTimer.Start();
         _timer.Tick += (_, _) => Update(); _timer.Start(); Update();
     }
 
@@ -79,6 +93,7 @@ public sealed partial class ShellViewModel : ObservableObject
     {
         var st = Station; var eng = st.Engine;
         if (Toast.Length > 0 && (DateTime.UtcNow - _toastAt).TotalSeconds > 8) Toast = "";
+        SetupHint = st.Streams.Destinations.Count == 0 ? "Step 1 — add your streaming server so listeners can tune in (Streaming Servers)." : _libraryEmpty ? "Step 2 — your music library is empty. Add songs in Audio Library, or add the free sample music and jingles." : "";
         Clock = TimeZoneInfo.ConvertTime(DateTime.UtcNow, st.Profile.TimeZone).ToString("HH:mm:ss");
         StationName = st.Profile.Name;
         int streaming = st.Streams.StreamingCount, total = st.Streams.Destinations.Count(d => d.Profile.Enabled);

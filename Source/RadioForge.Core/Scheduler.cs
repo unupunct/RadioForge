@@ -22,6 +22,8 @@ public class ScheduledEvent
     public DateOnly? RepeatUntil { get; set; }
     public int Priority { get; set; } = 1; // higher wins
     public bool Enabled { get; set; } = true;
+    /// <summary>Record this show while it is on and list it in the podcast feed.</summary>
+    public bool Archive { get; set; }
     public bool IsMomentary => Kind is EventKind.StationJingle or EventKind.SpecialAnnouncement or EventKind.CommercialBreak && Source != SourceKind.Playlist;
 }
 

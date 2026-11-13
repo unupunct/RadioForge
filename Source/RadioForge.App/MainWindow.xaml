@@ -48,8 +48,8 @@
         <!-- SIDEBAR -->
         <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,1,0">
             <DockPanel>
-            <Button DockPanel.Dock="Bottom" Content="☰" Command="{Binding ToggleNavCommand}" Margin="8" Padding="0,6" ToolTip="Collapse / expand the sidebar" HorizontalAlignment="Stretch"/>
-            <ListBox x:Name="Nav" ItemsSource="{x:Static Member=vm:ShellViewModel.NavItems}" xmlns:vm="clr-namespace:RadioForge.App.ViewModels"
+            <Button DockPanel.Dock="Bottom" Content="☰" AutomationProperties.Name="Collapse or expand the sidebar" Command="{Binding ToggleNavCommand}" Margin="8" Padding="0,6" ToolTip="Collapse / expand the sidebar" HorizontalAlignment="Stretch"/>
+            <ListBox x:Name="Nav" AutomationProperties.Name="Sections" ItemsSource="{Binding VisibleNav}"
                      SelectedItem="{Binding SelectedNav, Mode=TwoWay}" ItemContainerStyle="{StaticResource NavItem}"
                      Background="Transparent" BorderThickness="0" Padding="0,10" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
@@ -72,7 +72,7 @@
                     Visibility="{Binding Toast, Converter={StaticResource NullVis}}" MaxWidth="760">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{Binding Toast}" TextWrapping="Wrap" VerticalAlignment="Center" MaxWidth="660"/>
-                    <Button Content="✕" Command="{Binding DismissToastCommand}" Margin="14,0,0,0" Padding="8,2"/>
+                    <Button Content="✕" AutomationProperties.Name="Dismiss message" Command="{Binding DismissToastCommand}" Margin="14,0,0,0" Padding="8,2"/>
                 </StackPanel>
             </Border>
         </Grid>

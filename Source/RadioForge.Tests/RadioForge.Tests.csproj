@@ -4,6 +4,8 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <NoWarn>$(NoWarn);WPF0001;CS8618</NoWarn>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -16,10 +18,18 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="System.IO" />
+    <Using Include="System.Net.Http" />
+    <Using Include="System.Threading.Tasks" />
+    <Using Remove="System.Windows.Forms" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\RadioForge.Core\RadioForge.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RadioForge.App\RadioForge.App.csproj" />
   </ItemGroup>
 
 </Project>

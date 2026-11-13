@@ -26,6 +26,7 @@ public partial class ServersView : UserControl
     public ServersView()
     {
         InitializeComponent(); LayoutPersist.Attach(Split, "servers");
+        Editor.DataContext = EncoderPanel.DataContext = new ServerProfile(); // neutral placeholder until a server is selected (no binding errors)
         TypeBox.ItemsSource = Enum.GetValues<ServerType>(); CodecBox.ItemsSource = Enum.GetValues<AudioCodec>();
         BitrateBox.ItemsSource = new[] { 32, 48, 64, 96, 128, 160, 192, 256, 320 }; RateBox.ItemsSource = new[] { 22050, 32000, 44100, 48000 }; ChBox.ItemsSource = new[] { 1, 2 };
         Loaded += (_, _) => { _t.Start(); if (List.SelectedItem == null && List.Items.Count > 0) List.SelectedIndex = 0; };

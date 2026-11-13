@@ -313,3 +313,19 @@ public class FfmpegDownloaderTests
         finally { l2.Stop(); }
     }
 }
+
+public class FfmpegRealDownloadTests
+{
+    [Fact]
+    public async Task Real_download_from_github_supports_aac_and_vorbis()
+    {
+        if (Environment.GetEnvironmentVariable("RF_NETWORK_TESTS") != "1") return; // opt-in: downloads ~175 MB
+        using var t = new TempRoot();
+        var path = await Ffmpeg.DownloadAsync();
+        Assert.Equal(Ffmpeg.DownloadedPath, path); Assert.True(File.Exists(path));
+        Assert.True(await Ffmpeg.HasEncoderAsync(path, "aac")); Assert.True(await Ffmpeg.HasEncoderAsync(path, "libvorbis"));
+        using var enc = new FfmpegEncoder(path, AudioCodec.Ogg, 96, 44100, 2); var n = 0; enc.Output += d => Interlocked.Add(ref n, d.Length);
+        var pcm = new float[88200]; for (int k = 0; k < 3; k++) enc.Encode(pcm, pcm.Length);
+        Assert.True(await Wait.For(() => n > 500, 8000));
+    }
+}

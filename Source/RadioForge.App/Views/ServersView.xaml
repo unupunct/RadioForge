@@ -17,7 +17,7 @@
             <Border Style="{StaticResource Card}" Padding="8" Margin="0">
                 <Grid>
                     <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                    <ListBox x:Name="List" ItemsSource="{Binding Station.Streams.Destinations}" Background="Transparent" BorderThickness="0" SelectionChanged="OnSelect">
+                    <ListBox x:Name="List" AutomationProperties.Name="Streaming servers" ItemsSource="{Binding Station.Streams.Destinations}" Background="Transparent" BorderThickness="0" SelectionChanged="OnSelect">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Grid Margin="2,4">

@@ -13,7 +13,7 @@
             <Border Style="{StaticResource Card}" Padding="8" Margin="0">
                 <Grid>
                     <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                    <ListBox x:Name="Lists" DisplayMemberPath="Display" SelectionChanged="OnListSelect" Background="Transparent" BorderThickness="0"/>
+                    <ListBox x:Name="Lists" AutomationProperties.Name="Playlists and folders" DisplayMemberPath="Display" SelectionChanged="OnListSelect" Background="Transparent" BorderThickness="0"/>
                     <WrapPanel Grid.Row="1" Margin="0,8,0,0">
                         <Button Content="＋ Playlist" Click="OnNew" Margin="0,0,4,4"/><Button Content="＋ Folder" Click="OnNewFolder" Margin="0,0,4,4"/>
                         <Button Content="Rename" Click="OnRename" Margin="0,0,4,4"/><Button Content="Delete" Click="OnDelete" Margin="0,0,4,4"/>
@@ -29,7 +29,7 @@
                         <TextBlock x:Name="ListTitle" Text="Select or create a playlist" FontWeight="SemiBold" FontSize="15"/>
                         <TextBlock x:Name="Total" Style="{StaticResource Muted}" DockPanel.Dock="Right" HorizontalAlignment="Right"/>
                     </DockPanel>
-                    <ListView x:Name="Items" Grid.Row="1" SelectionMode="Extended" MouseDoubleClick="OnPlayItem" Background="Transparent" BorderThickness="0">
+                    <ListView x:Name="Items" AutomationProperties.Name="Tracks in the selected playlist" Grid.Row="1" SelectionMode="Extended" MouseDoubleClick="OnPlayItem" Background="Transparent" BorderThickness="0">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="#" Width="36" DisplayMemberBinding="{Binding Index}"/>
@@ -44,7 +44,9 @@
                         <Button Content="▲" Click="OnUp" Margin="0,0,4,0" ToolTip="Move up"/><Button Content="▼" Click="OnDown" Margin="0,0,4,0" ToolTip="Move down"/>
                         <Button Content="Remove" Click="OnRemove" Margin="0,0,12,0"/>
                         <Button Content="▶ Play playlist" Click="OnPlayAll" Style="{StaticResource AccentButton}" Margin="0,0,4,0"/>
-                        <Button Content="Use for Auto DJ" Click="OnUseAutoDj"/>
+                        <Button Content="Use for Auto DJ" Click="OnUseAutoDj" Margin="0,0,12,0"/>
+                        <ToggleButton x:Name="VoiceBtn" Content="🎙 Record voice track" Click="OnVoice" ToolTip="Record a link for this playlist. Your microphone is recorded privately — it does not go on air."/>
+                        <TextBlock x:Name="VoiceMsg" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="10,0,0,0"/>
                     </WrapPanel>
                 </Grid>
             </Border>
@@ -62,15 +64,16 @@
 
         <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,10,0,0">
             <WrapPanel VerticalAlignment="Center">
-                <Button Content="⏮" Command="{Binding PreviousCommand}" Style="{StaticResource Transport}" MinWidth="48"/>
+                <Button Content="⏮" AutomationProperties.Name="Previous track" Command="{Binding PreviousCommand}" Style="{StaticResource Transport}" MinWidth="48"/>
                 <Button Content="{Binding PlayPauseText}" Command="{Binding PlayPauseCommand}" Style="{StaticResource Transport}" MinWidth="110"/>
-                <Button Content="⏹" Command="{Binding StopMusicCommand}" Style="{StaticResource Transport}" MinWidth="48"/>
-                <Button Content="⏭" Command="{Binding NextCommand}" Style="{StaticResource Transport}" MinWidth="48"/>
+                <Button Content="⏹" AutomationProperties.Name="Stop music" Command="{Binding StopMusicCommand}" Style="{StaticResource Transport}" MinWidth="48"/>
+                <Button Content="⏭" AutomationProperties.Name="Next track" Command="{Binding NextCommand}" Style="{StaticResource Transport}" MinWidth="48"/>
                 <ToggleButton Content="🔀 Random" IsChecked="{Binding Station.Profile.AutoDj.Shuffle}" Click="OnModes" Height="44" Padding="14,0" Margin="8,0,6,0"/>
                 <ToggleButton Content="🔁 Repeat" IsChecked="{Binding Station.Profile.AutoDj.Repeat}" Click="OnModes" Height="44" Padding="14,0" Margin="0,0,6,0"/>
                 <ToggleButton Content="📻 Auto DJ" IsChecked="{Binding Station.Profile.AutoDj.Enabled}" Height="44" Padding="14,0" Margin="0,0,16,0" ToolTip="Keep playing automatically whenever the queue ends"/>
                 <StackPanel Width="300" VerticalAlignment="Center">
                     <c:LabeledSlider Label="Crossfade" Minimum="0" Maximum="12" Step="0.5" Value="{Binding Station.Profile.Audio.CrossfadeSec, Mode=TwoWay}" Unit="s" Format="0.0" LabelWidth="80"/>
+                    <TextBlock Style="{StaticResource Muted}" FontSize="11" Text="0 s = gapless (the next track starts the instant one ends). Above 0 s the tracks overlap with an equal-power crossfade."/>
                     <TextBlock x:Name="AutoDjInfo" Style="{StaticResource Muted}" FontSize="11"/>
                 </StackPanel>
             </WrapPanel>

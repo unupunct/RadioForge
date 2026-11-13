@@ -248,7 +248,10 @@ public sealed class MicProcessor : ISampleProvider
     /// <summary>Post-chain RMS level (linear). Zero when muted. Drives ducking and the mic meter.</summary>
     public float Level => _level;
     public bool Gated { get; private set; }
-    public bool Open => !_s.Muted && (!_s.PushToTalk || PushToTalkDown);
+    /// <summary>Keeps the chain active even when muted (voice-track recording).</summary>
+    public volatile bool ForceOpen;
+    public bool HasInjectedSource => _src is not CaptureSource;
+    public bool Open => ForceOpen || (!_s.Muted && (!_s.PushToTalk || PushToTalkDown));
 
     public MicProcessor(ISampleProvider source, MicSettings settings, int rate)
     {
